@@ -50,10 +50,4 @@ jobs:
           URL=$(gcloud run services describe ${{ env.SERVICE }} --platform managed --region ${{ env.REGION }} --format 'value(status.url)')
           echo "Deployed to: $URL"
           curl -f "$URL/"
-          curl -f "$URL/healthz"
-          # Optional: Check cci/content.md as mentioned in the plan
-          if curl -s -I "$URL/cci/content.md" | grep -q "200 OK"; then
-            echo "cci/content.md is reachable"
-          else
-            echo "cci/content.md is not reachable (expected at /cci/content.md)"
-          fi
+          curl -f "$URL/ping"

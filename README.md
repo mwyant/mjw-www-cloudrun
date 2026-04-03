@@ -37,9 +37,9 @@ After deployment, follow Google Cloud Run domain mapping instructions:
 2. Update DNS A-records for `@` (apex) and CNAME for `www` according to Google's provided IPs.
 
 ## Health Check
-The container exposes a `/healthz` endpoint that returns `OK` (200). Cloud Run uses this to verify the container is ready.
+The container exposes a `/ping` endpoint that returns `OK` (200). Cloud Run uses this to verify the container is ready.
 ```bash
-curl https://<cloud-run-url>/healthz
+curl https://<cloud-run-url>/ping
 ```
 
 ---

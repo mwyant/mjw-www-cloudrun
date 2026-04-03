@@ -1,0 +1,13 @@
+:{$PORT:8080} {
+    root * /srv/mjw
+    file_server
+    encode gzip zstd
+    header X-Frame-Options "SAMEORIGIN"
+    header X-Content-Type-Options "nosniff"
+    try_files {path} {path}.html {path}/ =404
+
+    # Health check endpoint
+    handle /healthz {
+        respond "OK" 200
+    }
+}

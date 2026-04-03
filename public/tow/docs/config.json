@@ -1,0 +1,62 @@
+{
+  "departments": [
+    {
+      "id": "emergency",
+      "label": "Emergency Health",
+      "description": "Public health and community readiness plans.",
+      "folders": [
+        {
+          "id": "plan",
+          "label": "Emergency Plan",
+          "path": "emergency"
+        }
+      ]
+    },
+    {
+      "id": "clerk",
+      "label": "Town Clerk",
+      "description": "Meeting minutes and administrative notices.",
+      "folders": [
+        {
+          "id": "meeting-minutes",
+          "label": "Meeting Minutes",
+          "path": "clerk/meeting-minutes"
+        }
+      ]
+    },
+    {
+      "id": "codes",
+      "label": "Codes &amp; Planning",
+      "description": "Permits, planning documents, and local laws.",
+      "folders": [
+        {
+          "id": "code-docs",
+          "label": "Planning &amp; Permit Documents",
+          "path": "codes"
+        },
+        {
+          "id": "local-laws",
+          "label": "Local Laws",
+          "path": "codes/local-laws"
+        }
+      ]
+    },
+    {
+      "id": "highway",
+      "label": "Highway Department",
+      "description": "Road maps, mailbox schedules, and seasonal advisories.",
+      "folders": [
+        {
+          "id": "maps",
+          "label": "Road Maps",
+          "path": "highway/maps"
+        },
+        {
+          "id": "mailboxes",
+          "label": "Mailbox Routes",
+          "path": "highway/mailboxes"
+        }
+      ]
+    }
+  ]
+}

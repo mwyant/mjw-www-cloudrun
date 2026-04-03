@@ -1,0 +1,25 @@
+# Caddy configuration for mjw-www multi-site hosting
+# This setup serves static files behind nginx-proxy-manager (which handles SSL)
+
+{
+    admin off
+    auto_https off
+}
+
+http://mikewyantjr.com http://www.mikewyantjr.com {
+    root * /var/www/sites/mjw-www/public
+    file_server
+    encode gzip zstd
+    header X-Frame-Options "SAMEORIGIN"
+    header X-Content-Type-Options "nosniff"
+    try_files {path} {path}.html {path}/ =404
+}
+
+http://communitycapacity.org http://www.communitycapacity.org {
+    root * /var/www/sites/cci-www/public
+    file_server
+    encode gzip zstd
+    header X-Frame-Options "SAMEORIGIN"
+    header X-Content-Type-Options "nosniff"
+    try_files {path} {path}.html {path}/ =404
+}

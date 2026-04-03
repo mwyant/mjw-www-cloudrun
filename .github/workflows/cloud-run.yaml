@@ -1,0 +1,59 @@
+name: Build and Deploy to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'mjw-webhost/**'
+
+env:
+  PROJECT_ID: mikewyantjr-dev
+  SERVICE: mikewyantjr-www
+  REGION: northamerica-northeast1
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Google Auth
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v2'
+
+      - name: 'Docker auth'
+        run: |-
+          gcloud auth configure-docker gcr.io --quiet
+
+      - name: Build and Push Container
+        run: |-
+          docker build -t gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{ github.sha }} ./mjw-webhost
+          docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{ github.sha }}
+
+      - name: Deploy to Cloud Run
+        run: |-
+          gcloud run deploy ${{ env.SERVICE }} \
+            --platform managed \
+            --region ${{ env.REGION }} \
+            --image gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{ github.sha }} \
+            --allow-unauthenticated \
+            --port 8080
+
+      - name: Verify Deployment
+        run: |-
+          URL=$(gcloud run services describe ${{ env.SERVICE }} --platform managed --region ${{ env.REGION }} --format 'value(status.url)')
+          echo "Deployed to: $URL"
+          curl -f "$URL/"
+          curl -f "$URL/healthz"
+          # Optional: Check cci/content.md as mentioned in the plan
+          if curl -s -I "$URL/cci/content.md" | grep -q "200 OK"; then
+            echo "cci/content.md is reachable"
+          else
+            echo "cci/content.md is not reachable (expected at /cci/content.md)"
+          fi

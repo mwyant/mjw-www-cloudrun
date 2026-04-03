@@ -1,0 +1,27 @@
+/*
+  Theme overrides
+
+  This file is intended to be replaced/updated by exported theme settings.
+  It is loaded after style.css so it can override :root variables.
+*/
+
+:root {
+  --bg: #f2f5f4;
+  --bg-card: #ffffff;
+  --text: #16221c;
+  --muted: #4b5a53;
+  --accent: #1f5e84;
+  --accent-muted: #477b9a;
+  --accent-soft: rgba(31, 94, 132, 0.14);
+  --accent-border: rgba(31, 94, 132, 0.22);
+  --clay-soft: rgba(176, 100, 59, 0.14);
+  --radius-lg: 0.20rem;
+  --radius-md: 0.45rem;
+  --radius-sm: 0.8rem;
+  --section-gap: 1.60rem;
+  --page-pad-x: 1.55rem;
+  --page-pad-y: 1.90rem;
+  --card-pad: 1.50rem;
+  --border-alpha: 0.22;
+  --shadow-alpha: 0.22;
+}

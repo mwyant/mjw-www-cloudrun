@@ -1,0 +1,10 @@
+[
+  {
+    "name": "auto-delete-old-versions",
+    "action": "DELETE",
+    "condition": {
+      "tagState": "ANY",
+      "olderThan": "30d"
+    }
+  }
+]

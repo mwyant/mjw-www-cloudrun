@@ -1,0 +1,12 @@
+# Build artifacts
+mjw-www.container.tgz
+mjw-www.container/
+
+# Local testing
+public/tow/docs/
+*.pdf
+*.docx
+
+# OS files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /tow/
+
+# Sitemaps
+# Sitemap: https://mikewyantjr.com/sitemap.xml

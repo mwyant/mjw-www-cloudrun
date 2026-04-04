@@ -13,9 +13,20 @@
         handle {
             root * /srv/mjw
             encode gzip zstd
+            
+            # Security Headers
             header X-Frame-Options "SAMEORIGIN"
             header X-Content-Type-Options "nosniff"
-            
+            header Referrer-Policy "strict-origin-when-cross-origin"
+            header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+            header Content-Security-Policy "default-src 'self'; script-src 'self' https://ajax.googleapis.com https://d3e54v103j8qbb.cloudfront.net https://api.rss2json.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://api.rss2json.com; frame-src 'none'; object-src 'none';"
+
+            # Caching Headers for Static Assets
+            @static {
+                path *.ico *.css *.js *.gif *.jpg *.jpeg *.png *.svg *.woff *.woff2 *.webp *.avif *.mp4
+            }
+            header @static Cache-Control "public, max-age=31536000, immutable"
+
             try_files {path} {path}.html {path}/ =404
             file_server
         }

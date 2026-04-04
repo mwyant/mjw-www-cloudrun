@@ -36,14 +36,27 @@
   
   /* Layout */
   --container-width: 1200px;
-  --border-radius: 12px;
-  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --border-radius: 4px; /* Gritty industrial feel */
+  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+@keyframes glitch-text {
+  0% { text-shadow: 2px 0 var(--clr-cerulean), -2px 0 var(--clr-crimson); }
+  25% { text-shadow: -2px 0 var(--clr-cerulean), 2px 0 var(--clr-crimson); }
+  50% { text-shadow: 2px 2px var(--clr-cerulean), -2px -2px var(--clr-crimson); }
+  75% { text-shadow: -2px -2px var(--clr-cerulean), 2px 2px var(--clr-crimson); }
+  100% { text-shadow: 2px 0 var(--clr-cerulean), -2px 0 var(--clr-crimson); }
+}
+
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
 }
 
 html {
@@ -60,25 +73,40 @@ body {
   min-height: 100vh;
 }
 
+body::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: rgba(0, 229, 255, 0.1);
+  z-index: 9999;
+  pointer-events: none;
+  animation: scanline 8s linear infinite;
+}
+
 img {
   max-width: 100%;
   display: block;
 }
 
 a {
-  color: var(--clr-primary);
+  color: var(--clr-cerulean);
   text-decoration: none;
   transition: var(--transition);
 }
 a:hover {
   color: var(--clr-primary-hover);
+  text-shadow: 0 0 10px var(--clr-cerulean);
 }
 
 h1, h2, h3, h4 {
   font-family: var(--font-heading);
-  line-height: 1.2;
+  line-height: 1.1;
   margin-bottom: var(--space-sm);
   color: #ffffff;
+  letter-spacing: -1px;
 }
 
 /* -------------------------------------
@@ -146,6 +174,100 @@ h1, h2, h3, h4 {
   -webkit-text-fill-color: transparent;
   margin-bottom: var(--space-sm);
   text-shadow: 0 0 60px rgba(0, 229, 255, 0.4);
+  animation: glitch-text 4s infinite linear;
+}
+
+.author-portrait {
+  width: 280px;
+  height: 380px;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  border: 1px solid var(--clr-crimson);
+  margin-bottom: var(--space-md);
+  box-shadow: 10px 10px 0px var(--clr-crimson);
+  position: relative;
+}
+
+.author-portrait::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, transparent, rgba(255, 0, 60, 0.2));
+  mix-blend-mode: color-burn;
+}
+
+.portrait-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+  filter: contrast(110%) saturate(110%);
+}
+
+.author-portrait:hover .portrait-img {
+  transform: scale(1.05);
+}
+
+.author-quote {
+  font-family: var(--font-heading);
+  font-size: var(--step-2);
+  line-height: 1.4;
+  color: #fff;
+  border-left: 6px solid var(--clr-crimson);
+  padding-left: var(--space-md);
+  margin-block: var(--space-md);
+  font-style: italic;
+  background: rgba(255, 0, 60, 0.05);
+  padding: 1rem;
+}
+
+.book-card {
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  transition: var(--transition);
+  box-shadow: 5px 5px 0px rgba(0, 229, 255, 0.1);
+}
+
+.book-card:hover {
+  transform: translate(-3px, -3px);
+  border-color: var(--clr-cerulean);
+  box-shadow: 8px 8px 0px var(--clr-cerulean);
+}
+
+.btn-primary {
+  background: var(--clr-cerulean);
+  color: var(--clr-bg);
+  box-shadow: 4px 4px 0px var(--clr-primary);
+  border-radius: var(--border-radius);
+}
+.btn-primary:hover {
+  background: #fff;
+  color: var(--clr-bg);
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px var(--clr-primary-hover);
+}
+
+.btn-outline {
+  background-color: transparent;
+  color: var(--clr-text);
+  border-color: var(--clr-border);
+  border-radius: var(--border-radius);
+  box-shadow: 4px 4px 0px rgba(0, 229, 255, 0.1);
+}
+.btn-outline:hover {
+  background-color: var(--clr-surface);
+  border-color: var(--clr-cerulean);
+  color: #fff;
+  box-shadow: 6px 6px 0px var(--clr-cerulean);
 }
 
 .author-portrait {

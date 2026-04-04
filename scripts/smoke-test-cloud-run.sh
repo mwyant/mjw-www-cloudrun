@@ -5,7 +5,7 @@
 set -euo pipefail
 
 SERVICE_NAME="mikewyantjr-www"
-REGION="northamerica-northeast1"
+REGION="us-east1"
 
 # Get the URL of the service
 echo "Fetching Cloud Run URL for $SERVICE_NAME..."

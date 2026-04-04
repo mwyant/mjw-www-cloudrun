@@ -10,7 +10,7 @@ on:
 env:
   PROJECT_ID: mikewyantjr-dev
   SERVICE: mikewyantjr-www
-  REGION: northamerica-northeast1
+  REGION: us-east1
 
 jobs:
   deploy:

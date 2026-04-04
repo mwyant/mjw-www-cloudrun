@@ -2,16 +2,18 @@
    CSS Variables & Reset
 ------------------------------------- */
 :root {
-  /* Colors - Space Opera Theme */
-  --clr-bg: #030008; /* Deep space black/purple */
-  --clr-surface: rgba(15, 10, 30, 0.6);
-  --clr-surface-hover: rgba(30, 20, 60, 0.8);
+  /* Colors - Space Opera Theme with Urban Fantasy Grittiness */
+  --clr-bg: #030008;
+  --clr-surface: rgba(15, 10, 30, 0.7);
+  --clr-surface-hover: rgba(30, 20, 60, 0.9);
   --clr-text: #e2e8f0;
   --clr-text-muted: #94a3b8;
-  --clr-primary: #8b5cf6;
-  --clr-primary-hover: #a78bfa;
-  --clr-accent: #c084fc;
-  --clr-border: rgba(139, 92, 246, 0.2);
+  --clr-primary: #0077ff; /* Cerulean Base */
+  --clr-primary-hover: #0099ff;
+  --clr-accent: #ff0044; /* Crimson Base */
+  --clr-cerulean: #00e5ff;
+  --clr-crimson: #ff003c;
+  --clr-border: rgba(0, 229, 255, 0.2);
 
   /* Typography */
   --font-heading: 'Cinzel', serif;
@@ -130,10 +132,72 @@ h1, h2, h3, h4 {
 
 .section-header h2 {
   font-size: var(--step-4);
-  background: linear-gradient(135deg, #fff 0%, var(--clr-primary) 100%);
+  background: linear-gradient(135deg, #fff 0%, var(--clr-cerulean) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   margin-bottom: var(--space-md);
+}
+
+.hero-title {
+  font-size: var(--step-6);
+  font-weight: 700;
+  background: linear-gradient(to bottom right, #ffffff, var(--clr-cerulean));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: var(--space-sm);
+  text-shadow: 0 0 60px rgba(0, 229, 255, 0.4);
+}
+
+.author-portrait {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid var(--clr-crimson);
+  margin-bottom: var(--space-md);
+  box-shadow: 0 0 40px rgba(255, 0, 60, 0.4);
+}
+
+.author-quote {
+  font-family: var(--font-heading);
+  font-size: var(--step-2);
+  line-height: 1.4;
+  color: #fff;
+  border-left: 4px solid var(--clr-crimson);
+  padding-left: var(--space-md);
+  margin-block: var(--space-md);
+  font-style: italic;
+}
+
+.book-card:hover {
+  transform: translateY(-10px);
+  border-color: var(--clr-cerulean);
+  box-shadow: 0 15px 30px rgba(0,0,0,0.5), 0 0 20px rgba(0, 229, 255, 0.2);
+}
+
+.book-meta {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--clr-cerulean);
+  margin-bottom: 0.5rem;
+}
+
+.medium-meta {
+  font-size: 0.8rem;
+  color: var(--clr-cerulean);
+  margin-bottom: 0.25rem;
+}
+
+#medium-latest .button.w-button {
+  background-color: var(--clr-crimson);
+  box-shadow: 0 0 10px rgba(255, 0, 60, 0.2);
+}
+
+#medium-latest .button.w-button:hover {
+  background-color: #ff3366;
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px rgba(255, 0, 60, 0.4);
 }
 
 .eyebrow {
@@ -168,9 +232,45 @@ h1, h2, h3, h4 {
 }
 
 .btn-primary {
-  background-color: var(--clr-primary);
+  background: linear-gradient(135deg, var(--clr-primary) 0%, #0044ff 100%);
   color: #fff;
-  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+  box-shadow: 0 4px 15px rgba(0, 119, 255, 0.4);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+}
+.btn-primary:hover {
+  background: linear-gradient(135deg, var(--clr-primary-hover) 0%, #0066ff 100%);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 119, 255, 0.6);
+  border-color: var(--clr-cerulean);
+}
+
+.eyebrow {
+  display: inline-block;
+  font-size: var(--step--1);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--clr-cerulean);
+  margin-bottom: var(--space-sm);
+  padding: 0.2rem 1rem;
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-radius: 4px; /* More "gritty" industrial feel */
+  background: rgba(0, 229, 255, 0.05);
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.1);
+}
+
+.bsfa-badge {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--clr-crimson);
+  border: 1px solid rgba(255, 0, 60, 0.4);
+  padding: 0.3rem 1rem;
+  border-radius: 4px;
+  background: rgba(255, 0, 60, 0.1);
+  margin-bottom: var(--space-md);
+  backdrop-filter: blur(5px);
+  box-shadow: 0 0 15px rgba(255, 0, 60, 0.15);
 }
 .btn-primary:hover {
   background-color: var(--clr-primary-hover);

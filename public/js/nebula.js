@@ -42,11 +42,11 @@
   }
 
   // Nebula "Clouds"
-  // We'll draw large blurred radial gradients that shift slowly
+  // Crimson and Cerulean nebulae pitting against each other
   const nebulas = [
-    { x: 0.2, y: 0.3, r: 0.6, color: 'rgba(75, 0, 130, 0.1)', vx: 0.0001, vy: 0.0002 },
-    { x: 0.8, y: 0.7, r: 0.5, color: 'rgba(0, 0, 128, 0.1)', vx: -0.0002, vy: 0.0001 },
-    { x: 0.5, y: 0.5, r: 0.7, color: 'rgba(139, 0, 139, 0.05)', vx: 0.00015, vy: -0.00015 }
+    { x: 0.1, y: 0.2, r: 0.7, color: 'rgba(255, 0, 60, 0.08)', vx: 0.0001, vy: 0.00015 }, // Crimson
+    { x: 0.9, y: 0.8, r: 0.6, color: 'rgba(0, 229, 255, 0.08)', vx: -0.00015, vy: 0.0001 }, // Cerulean
+    { x: 0.5, y: 0.5, r: 0.8, color: 'rgba(0, 0, 50, 0.05)', vx: 0.0001, vy: -0.0001 } // Deep base
   ];
 
   function drawNebulas() {

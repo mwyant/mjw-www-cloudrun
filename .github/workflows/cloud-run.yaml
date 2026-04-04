@@ -29,19 +29,19 @@ jobs:
 
       - name: 'Docker auth'
         run: |-
-          gcloud auth configure-docker gcr.io --quiet
+          gcloud auth configure-docker us-east1-docker.pkg.dev --quiet
 
       - name: Build and Push Container
         run: |-
-          docker build -t gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{ github.sha }} ./mjw-webhost
-          docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{ github.sha }}
+          docker build -t us-east1-docker.pkg.dev/${{ env.PROJECT_ID }}/website/${{ env.SERVICE }}:${{ github.sha }} ./mjw-webhost
+          docker push us-east1-docker.pkg.dev/${{ env.PROJECT_ID }}/website/${{ env.SERVICE }}:${{ github.sha }}
 
       - name: Deploy to Cloud Run
         run: |-
           gcloud run deploy ${{ env.SERVICE }} \
             --platform managed \
             --region ${{ env.REGION }} \
-            --image gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{ github.sha }} \
+            --image us-east1-docker.pkg.dev/${{ env.PROJECT_ID }}/website/${{ env.SERVICE }}:${{ github.sha }} \
             --allow-unauthenticated \
             --port 8080
 

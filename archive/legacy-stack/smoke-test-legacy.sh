@@ -2,7 +2,7 @@
 set -euo pipefail
 
 HOST=localhost
-DOMAINS=(mikewyantjr.com communitycapacity.org www.communitycapacity.org)
+DOMAINS=(mikewyantjr.com)
 PATHS=(/)
 failed=0
 

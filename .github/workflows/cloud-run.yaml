@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'mjw-webhost/**'
 
 env:
   PROJECT_ID: mikewyantjr-dev
@@ -33,7 +31,7 @@ jobs:
 
       - name: Build and Push Container
         run: |-
-          docker build -t us-east1-docker.pkg.dev/${{ env.PROJECT_ID }}/website/${{ env.SERVICE }}:${{ github.sha }} ./mjw-webhost
+          docker build -t us-east1-docker.pkg.dev/${{ env.PROJECT_ID }}/website/${{ env.SERVICE }}:${{ github.sha }} .
           docker push us-east1-docker.pkg.dev/${{ env.PROJECT_ID }}/website/${{ env.SERVICE }}:${{ github.sha }}
 
       - name: Deploy to Cloud Run

@@ -2,9 +2,9 @@
   const canvas = document.getElementById('nebula-canvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d', { alpha: false });
-  let width, height, stars = [];
+  let width, height, stars = [], fireflies = [];
   let mouseX = 0, mouseY = 0;
-  const STAR_COUNT = 350, SPEED = 0.05;
+  const STAR_COUNT = 350, FIREFLY_COUNT = 45, SPEED = 0.05;
 
   function resize() {
     width = window.innerWidth;
@@ -12,6 +12,7 @@
     canvas.width = width;
     canvas.height = height;
     initStars();
+    initFireflies();
   }
 
   function initStars() {
@@ -29,6 +30,22 @@
     }
   }
 
+  function initFireflies() {
+    fireflies = [];
+    for (let i = 0; i < FIREFLY_COUNT; i++) {
+      fireflies.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        radius: Math.random() * 1.8 + 0.8,
+        alpha: Math.random() * 0.4 + 0.2,
+        speed: Math.random() * 0.6 + 0.3,
+        angle: Math.random() * Math.PI * 2,
+        drift: Math.random() * 0.02 + 0.01,
+        oscillation: Math.random() * 30 + 10
+      });
+    }
+  }
+
   const nebulas = [
     { x: 0.1, y: 0.2, r: 0.7, color: 'rgba(255,0,60,0.08)', vx: 0.0001, vy: 0.00015 },
     { x: 0.9, y: 0.8, r: 0.6, color: 'rgba(0,229,255,0.08)', vx: -0.00015, vy: 0.0001 },
@@ -42,7 +59,6 @@
       if (n.x < -0.2 || n.x > 1.2) n.vx *= -1;
       if (n.y < -0.2 || n.y > 1.2) n.vy *= -1;
 
-      // Mouse Parallax Offset (subtle)
       const offsetX = mouseX * 20;
       const offsetY = mouseY * 20;
 
@@ -84,7 +100,6 @@
       const r = s.radius * scale;
       const a = s.alpha * scale;
 
-      // Mouse Parallax for Stars (faster movement)
       const parallaxX = mouseX * (1 - scale) * 40;
       const parallaxY = mouseY * (1 - scale) * 40;
 
@@ -95,9 +110,33 @@
     }
   }
 
+  function drawFireflies() {
+    for (let f of fireflies) {
+      f.y -= f.speed;
+      f.angle += f.drift;
+      const offsetX = Math.sin(f.angle) * f.oscillation;
+      
+      const currentAlpha = f.alpha + (Math.sin(f.angle * 2) * 0.1);
+
+      if (f.y < -50) {
+        f.y = height + 50;
+        f.x = Math.random() * width;
+      }
+
+      const parallaxX = mouseX * 50;
+      const parallaxY = mouseY * 50;
+
+      ctx.beginPath();
+      ctx.fillStyle = `rgba(0, 229, 255, ${Math.max(0.1, currentAlpha)})`;
+      ctx.arc(f.x + offsetX + parallaxX, f.y + parallaxY, f.radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
   let animId;
   function animate() {
     drawStars();
+    drawFireflies();
     animId = requestAnimationFrame(animate);
   }
 

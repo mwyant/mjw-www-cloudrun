@@ -7,49 +7,71 @@
   --deep-pink: #fc0a7e;
   --medium-violet-red: #b32e6e;
   --medium-slate-blue: #955df1;
+  /* Fluid Typography Scale */
+  --font-size-h1: clamp(3rem, 10vw, 6rem);
+  --font-size-h2: clamp(2rem, 5vw, 3rem);
+  --font-size-h3: clamp(1.25rem, 3vw, 1.75rem);
+  --font-size-h4: clamp(1rem, 2vw, 1.25rem);
+  --font-size-p: clamp(1rem, 1.5vw, 1.125rem);
+}
+
+@font-face {
+  font-family: 'Gothic A1';
+  src: url('../fonts/gothic-a1-regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Gothic A1';
+  src: url('../fonts/gothic-a1-700.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
 }
 
 h1 {
   color: #fff;
   margin-top: 20px;
   margin-bottom: 10px;
-  font-size: 10vh;
+  font-size: var(--font-size-h1);
   font-weight: 700;
-  line-height: 10vh;
+  line-height: 1.1;
 }
 
 h2 {
   color: #fff;
   margin-top: 20px;
   margin-bottom: 20px;
-  font-size: 38px;
+  font-size: var(--font-size-h2);
   font-weight: 700;
-  line-height: 48px;
+  line-height: 1.2;
 }
 
 h3 {
   color: #6b6b6b;
   margin-top: 10px;
   margin-bottom: 25px;
-  font-size: 24px;
+  font-size: var(--font-size-h3);
   font-weight: 400;
-  line-height: 40px;
+  line-height: 1.4;
 }
 
 h4 {
   color: #fff;
   margin-top: 10px;
   margin-bottom: 10px;
-  font-size: 18px;
+  font-size: var(--font-size-h4);
   font-weight: 700;
-  line-height: 24px;
+  line-height: 1.4;
 }
 
 p {
   color: #6b6b6b;
   margin-bottom: 10px;
-  font-size: 16px;
-  line-height: 30px;
+  font-size: var(--font-size-p);
+  line-height: 1.6;
 }
 
 a {

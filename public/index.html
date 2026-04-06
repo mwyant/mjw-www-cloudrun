@@ -11,9 +11,12 @@
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary_large_image">
   
-  <link href="css/fonts.css" rel="stylesheet" type="text/css">
+  <style>
+    :root{--clr-bg:#030008;--clr-text:#e2e8f0;--clr-cerulean:#00e5ff;--clr-crimson:#ff003c;--font-heading:'Cinzel',serif;--font-body:'Montserrat',sans-serif;--step-0:clamp(1rem,0.91rem + 0.43vw,1.25rem);--step-6:clamp(2.99rem,2.37rem + 3.10vw,4.77rem);--space-sm:clamp(0.5rem,0.4rem + 0.5vw,1rem);--transition:all 0.2s cubic-bezier(0.4,0,0.2,1)}body{margin:0;padding:0;font-family:var(--font-body);background-color:var(--clr-bg);color:var(--clr-text);overflow-x:hidden}#nebula-canvas{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:-2;background-color:var(--clr-bg)}.main-nav{position:fixed;top:0;left:0;width:100%;z-index:100;padding-block:var(--space-sm);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);background:rgba(3,0,8,0.5);border-bottom:1px solid rgba(255,255,255,0.05)}.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}.hero-title{font-size:var(--step-6);font-family:var(--font-heading);font-weight:700;color:#fff;background:linear-gradient(135deg,#fff 30%,var(--clr-cerulean) 70%,#fff 100%);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:var(--space-sm);position:relative;text-shadow:0.5px 0.5px 0px var(--clr-cerulean),-0.5px -0.5px 0px var(--clr-crimson)}.loading{background-color:var(--clr-bg)}
+  </style>
+
   <link href="css/style.css" rel="stylesheet" type="text/css">
-  <link href="css/overrides.css" rel="stylesheet" type="text/css">
+  <link href="css/modern.css" rel="stylesheet" type="text/css">
   
   <script type="application/ld+json">
     {
@@ -193,12 +196,10 @@
       <div class="footer-logo">
         <img src="images/logo.webp" alt="Falstar Publishing">
       </div>
-      <p>&copy; <script>document.write(new Date().getFullYear())</script> Mike Wyant Jr. & Falstar Publishing LLC. All rights reserved. <span class="site-version" style="opacity: 0.3; font-size: 0.8rem; margin-left: 10px;">v3.0.7</span></p>
+      <p>&copy; <script>document.write(new Date().getFullYear())</script> Mike Wyant Jr. & Falstar Publishing LLC. All rights reserved. <span class="site-version" style="opacity: 0.3; font-size: 0.8rem; margin-left: 10px;">v3.0.8</span></p>
     </div>
   </footer>
 
-  <script src="js/nebula.js"></script>
-  <script src="js/main.js"></script>
-  <script src="js/medium-latest.js"></script>
+  <script src="js/bundle.js"></script>
 </body>
 </html>

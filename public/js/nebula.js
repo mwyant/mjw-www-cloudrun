@@ -4,6 +4,7 @@
   const ctx = canvas.getContext('2d', { alpha: false });
   let width, height, stars = [], fireflies = [];
   let mouseX = 0, mouseY = 0;
+  let scrollY = 0, maxScroll = 0;
   const STAR_COUNT = 350, FIREFLY_COUNT = 45, SPEED = 0.05;
 
   function resize() {
@@ -11,6 +12,7 @@
     height = window.innerHeight;
     canvas.width = width;
     canvas.height = height;
+    maxScroll = document.documentElement.scrollHeight - window.innerHeight;
     initStars();
     initFireflies();
   }
@@ -77,10 +79,51 @@
     }
   }
 
+  function drawScrollHaze() {
+    const scrollPercent = maxScroll > 0 ? scrollY / maxScroll : 0;
+    
+    // Crimson Haze: Brightest at top (scrollPercent 0), fades as we scroll down
+    const crimsonAlpha = Math.max(0, 0.25 * (1 - scrollPercent));
+    if (crimsonAlpha > 0) {
+      // Bottom Left Crimson
+      const gLeft = ctx.createRadialGradient(0, height, 0, 0, height, width * 0.6);
+      gLeft.addColorStop(0, `rgba(255, 0, 60, ${crimsonAlpha})`);
+      gLeft.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      
+      // Bottom Right Crimson
+      const gRight = ctx.createRadialGradient(width, height, 0, width, height, width * 0.6);
+      gRight.addColorStop(0, `rgba(255, 0, 60, ${crimsonAlpha})`);
+      gRight.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      
+      ctx.globalCompositeOperation = 'screen';
+      ctx.fillStyle = gLeft;
+      ctx.fillRect(0, 0, width, height);
+      ctx.fillStyle = gRight;
+      ctx.fillRect(0, 0, width, height);
+    }
+
+    // Cerulean Glow: Brightest at bottom (scrollPercent 1)
+    const ceruleanAlpha = Math.max(0, 0.2 * scrollPercent);
+    if (ceruleanAlpha > 0) {
+      // Large central glow from the bottom
+      const gCenter = ctx.createRadialGradient(width / 2, height, 0, width / 2, height, height * 1.2);
+      gCenter.addColorStop(0, `rgba(0, 229, 255, ${ceruleanAlpha})`);
+      gCenter.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      
+      ctx.globalCompositeOperation = 'screen';
+      ctx.fillStyle = gCenter;
+      ctx.fillRect(0, 0, width, height);
+    }
+    
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
   function drawStars() {
-    ctx.fillStyle = 'rgba(3,0,8,0.4)';
+    ctx.fillStyle = 'rgba(3,0,8,1)'; // Solid background to prevent ghosting
     ctx.fillRect(0, 0, width, height);
+    
     drawNebulas();
+    drawScrollHaze();
 
     for (let s of stars) {
       const speed = (width - s.z) * SPEED * 0.001;
@@ -154,6 +197,10 @@
     mouseX = (e.clientX / window.innerWidth) - 0.5;
     mouseY = (e.clientY / window.innerHeight) - 0.5;
   });
+
+  window.addEventListener('scroll', () => {
+    scrollY = window.scrollY;
+  }, { passive: true });
 
   resize();
   animate();

@@ -1,0 +1,43 @@
+{
+  "player": {
+    "displaySize": [72, 46],
+    "collisionRadius": 22
+  },
+  "enemies": {
+    "scout": {
+      "displaySize": [60, 42],
+      "collisionRadius": 18
+    },
+    "zigzag": {
+      "displaySize": [64, 46],
+      "collisionRadius": 18
+    },
+    "turret": {
+      "displaySize": [74, 52],
+      "collisionRadius": 21
+    },
+    "drone": {
+      "displaySize": [52, 52],
+      "collisionRadius": 14
+    }
+  },
+  "boss": {
+    "displaySize": [244, 142],
+    "collisionRadius": 58
+  },
+  "pickup": {
+    "displaySize": [30, 30],
+    "collisionRadius": 13
+  },
+  "bullet": {
+    "player": {
+      "radius": 4
+    },
+    "weaponLevel1": {
+      "radius": 3
+    },
+    "enemy": {
+      "radius": 5
+    }
+  }
+}

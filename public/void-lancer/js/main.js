@@ -29,6 +29,12 @@ const COLORS = {
 const SOUND_STORAGE_KEY = 'voidLancerSoundEnabled';
 const MUSIC_TRACK_URL = './assets/music/lyria_rtype_test_loopable.mp3';
 
+function getMusicUrl() {
+  const pageDir = new URL(window.location.href);
+  const path = pageDir.pathname.endsWith('/') ? pageDir.pathname : pageDir.pathname + '/';
+  return new URL(`${path}assets/music/lyria_rtype_test_loopable.mp3`, pageDir.origin).href;
+}
+
 const SOUND_LIBRARY = {
   playerFire: { layers: [{ type: 'triangle', startFrequency: 920, endFrequency: 640, gain: 0.22 }, { type: 'sine', startFrequency: 1840, endFrequency: 1220, gain: 0.06 }], duration: 0.09, attack: 0.002, release: 0.045, volume: 0.26 },
   enemyFire: { layers: [{ type: 'square', startFrequency: 250, endFrequency: 172, gain: 0.16 }, { type: 'triangle', startFrequency: 128, endFrequency: 96, gain: 0.05 }], duration: 0.095, attack: 0.002, release: 0.05, volume: 0.2 },
@@ -171,13 +177,15 @@ function easeInQuad(t) {
 }
 
 function assetUrl(file) {
-  const pageDir = new URL('./', window.location.href);
-  return new URL(`./assets/void_lancer_pack/${file}`, pageDir).href;
+  const pageDir = new URL(window.location.href);
+  const path = pageDir.pathname.endsWith('/') ? pageDir.pathname : pageDir.pathname + '/';
+  return new URL(`${path}assets/void_lancer_pack/${file}`, pageDir.origin).href;
 }
 
 function assetDataUrl(file) {
-  const pageDir = new URL('./', window.location.href);
-  return new URL(`./assets/data/${file}`, pageDir).href;
+  const pageDir = new URL(window.location.href);
+  const path = pageDir.pathname.endsWith('/') ? pageDir.pathname : pageDir.pathname + '/';
+  return new URL(`${path}assets/data/${file}`, pageDir.origin).href;
 }
 
 class MockupLevelScene extends Phaser.Scene {
@@ -371,8 +379,7 @@ class MockupLevelScene extends Phaser.Scene {
   ensureMusicElement() {
     if (this.musicElement) return this.musicElement;
 
-    const pageDir = new URL('./', window.location.href);
-    const musicUrl = new URL(MUSIC_TRACK_URL, pageDir).href;
+    const musicUrl = getMusicUrl();
     const audio = new Audio(musicUrl);
     audio.loop = true;
     audio.preload = 'auto';

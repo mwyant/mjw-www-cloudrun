@@ -1,0 +1,114 @@
+:root {
+  --clr-bg: #030008;
+  --clr-surface: rgba(15, 10, 30, 0.7);
+  --clr-surface-hover: rgba(30, 20, 60, 0.9);
+  --clr-text: #e2e8f0;
+  --clr-text-muted: #94a3b8;
+  --clr-primary: #0077ff;
+  --clr-primary-hover: #0099ff;
+  --clr-accent: #ff0044;
+  --clr-cerulean: #00e5ff;
+  --clr-crimson: #ff003c;
+  --clr-border: rgba(0, 229, 255, 0.2);
+  --font-heading: 'Cinzel', serif;
+  --font-body: 'Montserrat', sans-serif;
+  --step--1: clamp(0.83rem, 0.78rem + 0.23vw, 0.96rem);
+  --step-0: clamp(1rem, 0.91rem + 0.43vw, 1.25rem);
+  --step-1: clamp(1.2rem, 1.07rem + 0.63vw, 1.56rem);
+  --step-2: clamp(1.44rem, 1.26rem + 0.89vw, 1.95rem);
+  --step-3: clamp(1.73rem, 1.48rem + 1.24vw, 2.44rem);
+  --step-4: clamp(2.07rem, 1.73rem + 1.70vw, 3.05rem);
+  --step-5: clamp(2.49rem, 2.03rem + 2.31vw, 3.82rem);
+  --step-6: clamp(2.99rem, 2.37rem + 3.10vw, 4.77rem);
+  --space-sm: clamp(0.5rem, 0.4rem + 0.5vw, 1rem);
+  --space-md: clamp(1rem, 0.8rem + 1vw, 2rem);
+  --space-lg: clamp(2rem, 1.6rem + 2vw, 4rem);
+  --space-xl: clamp(4rem, 3.2rem + 4vw, 8rem);
+  --container-width: 1200px;
+  --border-radius: 4px;
+  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@font-face {
+  font-family: 'Cinzel';
+  src: url('../fonts/Cinzel/Cinzel-VariableFont_wght.ttf') format('truetype');
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Montserrat';
+  src: url('../fonts/Montserrat/Montserrat-VariableFont_wght.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Montserrat';
+  src: url('../fonts/Montserrat/Montserrat-Italic-VariableFont_wght.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Glassmorphism & Modern FX */
+.book-card {
+  background: rgba(15, 10, 30, 0.4) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 229, 255, 0.1) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  transition: transform 0.4s var(--transition), border-color 0.4s var(--transition), box-shadow 0.4s var(--transition) !important;
+  overflow: hidden;
+}
+
+@media (hover: hover) {
+  .book-card:hover {
+    transform: translateY(-10px) scale(1.02);
+    border-color: var(--clr-cerulean) !important;
+    box-shadow: 0 20px 40px rgba(0, 229, 255, 0.15);
+  }
+
+  .book-card:hover .book-cover img {
+    transform: scale(1.08);
+  }
+}
+
+.btn-primary {
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 15px rgba(0, 119, 255, 0.3);
+}
+
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(0, 229, 255, 0.2), transparent);
+  transform: rotate(45deg);
+  transition: 0.5s;
+}
+
+.btn-primary:hover::after {
+  left: 100%;
+}
+
+.hero-title {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  background: linear-gradient(to bottom, #fff 0%, #cbd5e1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.1));
+}
+
+@media screen and (max-width: 768px) {
+  .hero-title {
+    font-size: clamp(3rem, 15vw, 4rem) !important;
+  }
+}

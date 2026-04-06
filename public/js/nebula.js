@@ -35,14 +35,15 @@
   function initFireflies() {
     fireflies = [];
     for (let i = 0; i < FIREFLY_COUNT; i++) {
+      // Slowed down by 25%: base speed (0.3 -> 0.225), range (0.6 -> 0.45)
       fireflies.push({
         x: Math.random() * width,
         y: Math.random() * height,
         radius: Math.random() * 1.8 + 0.8,
         alpha: Math.random() * 0.4 + 0.2,
-        speed: Math.random() * 0.6 + 0.3,
+        speed: Math.random() * 0.45 + 0.225,
         angle: Math.random() * Math.PI * 2,
-        drift: Math.random() * 0.02 + 0.01,
+        drift: (Math.random() * 0.02 + 0.01) * 0.75, // Slowed drift too
         oscillation: Math.random() * 30 + 10
       });
     }
@@ -82,16 +83,16 @@
   function drawScrollHaze() {
     const scrollPercent = maxScroll > 0 ? scrollY / maxScroll : 0;
     
-    // Crimson Glow: More localized to corners, lower alpha (0.4 -> 0.2)
-    const crimsonAlpha = Math.max(0, 0.2 * (1 - scrollPercent));
+    // Crimson Glow: Much tighter (radius 0.15) and subtle alpha (0.1)
+    const crimsonAlpha = Math.max(0, 0.1 * (1 - scrollPercent));
     if (crimsonAlpha > 0) {
-      // Small Bottom Left Crimson
-      const gLeft = ctx.createRadialGradient(0, height, 0, 0, height, width * 0.4);
+      // Tiny Bottom Left Crimson
+      const gLeft = ctx.createRadialGradient(0, height, 0, 0, height, width * 0.15);
       gLeft.addColorStop(0, `rgba(255, 0, 60, ${crimsonAlpha})`);
       gLeft.addColorStop(1, 'rgba(0, 0, 0, 0)');
       
-      // Small Bottom Right Crimson
-      const gRight = ctx.createRadialGradient(width, height, 0, width, height, width * 0.4);
+      // Tiny Bottom Right Crimson
+      const gRight = ctx.createRadialGradient(width, height, 0, width, height, width * 0.15);
       gRight.addColorStop(0, `rgba(255, 0, 60, ${crimsonAlpha})`);
       gRight.addColorStop(1, 'rgba(0, 0, 0, 0)');
       
@@ -102,11 +103,10 @@
       ctx.fillRect(0, 0, width, height);
     }
 
-    // Cerulean Glow: Much stronger (0.35 -> 0.6) and massive vertical reach
-    const ceruleanAlpha = Math.max(0, 0.6 * scrollPercent);
+    // Cerulean Glow: Toned up (0.6 -> 0.8) and massive vertical reach
+    const ceruleanAlpha = Math.max(0, 0.8 * scrollPercent);
     if (ceruleanAlpha > 0) {
-      // Large central glow from the bottom
-      const gCenter = ctx.createRadialGradient(width / 2, height, 0, width / 2, height, height * 2.0);
+      const gCenter = ctx.createRadialGradient(width / 2, height, 0, width / 2, height, height * 2.5);
       gCenter.addColorStop(0, `rgba(0, 229, 255, ${ceruleanAlpha})`);
       gCenter.addColorStop(1, 'rgba(0, 0, 0, 0)');
       

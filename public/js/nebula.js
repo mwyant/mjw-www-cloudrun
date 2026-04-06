@@ -82,16 +82,16 @@
   function drawScrollHaze() {
     const scrollPercent = maxScroll > 0 ? scrollY / maxScroll : 0;
     
-    // Crimson Haze: Amplified intensity (0.25 -> 0.4) and larger radius (0.6 -> 0.8)
-    const crimsonAlpha = Math.max(0, 0.4 * (1 - scrollPercent));
+    // Crimson Glow: More localized to corners, lower alpha (0.4 -> 0.2)
+    const crimsonAlpha = Math.max(0, 0.2 * (1 - scrollPercent));
     if (crimsonAlpha > 0) {
-      // Bottom Left Crimson
-      const gLeft = ctx.createRadialGradient(0, height, 0, 0, height, width * 0.8);
+      // Small Bottom Left Crimson
+      const gLeft = ctx.createRadialGradient(0, height, 0, 0, height, width * 0.4);
       gLeft.addColorStop(0, `rgba(255, 0, 60, ${crimsonAlpha})`);
       gLeft.addColorStop(1, 'rgba(0, 0, 0, 0)');
       
-      // Bottom Right Crimson
-      const gRight = ctx.createRadialGradient(width, height, 0, width, height, width * 0.8);
+      // Small Bottom Right Crimson
+      const gRight = ctx.createRadialGradient(width, height, 0, width, height, width * 0.4);
       gRight.addColorStop(0, `rgba(255, 0, 60, ${crimsonAlpha})`);
       gRight.addColorStop(1, 'rgba(0, 0, 0, 0)');
       
@@ -102,11 +102,11 @@
       ctx.fillRect(0, 0, width, height);
     }
 
-    // Cerulean Glow: Amplified intensity (0.2 -> 0.35) and larger vertical reach
-    const ceruleanAlpha = Math.max(0, 0.35 * scrollPercent);
+    // Cerulean Glow: Much stronger (0.35 -> 0.6) and massive vertical reach
+    const ceruleanAlpha = Math.max(0, 0.6 * scrollPercent);
     if (ceruleanAlpha > 0) {
       // Large central glow from the bottom
-      const gCenter = ctx.createRadialGradient(width / 2, height, 0, width / 2, height, height * 1.5);
+      const gCenter = ctx.createRadialGradient(width / 2, height, 0, width / 2, height, height * 2.0);
       gCenter.addColorStop(0, `rgba(0, 229, 255, ${ceruleanAlpha})`);
       gCenter.addColorStop(1, 'rgba(0, 0, 0, 0)');
       
@@ -119,7 +119,7 @@
   }
 
   function drawStars() {
-    ctx.fillStyle = 'rgba(3,0,8,1)'; // Solid background to prevent ghosting
+    ctx.fillStyle = 'rgba(3,0,8,1)';
     ctx.fillRect(0, 0, width, height);
     
     drawNebulas();

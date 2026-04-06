@@ -176,17 +176,7 @@ function easeInQuad(t) {
   return t * t;
 }
 
-function assetUrl(file) {
-  const pageDir = new URL(window.location.href);
-  const path = pageDir.pathname.endsWith('/') ? pageDir.pathname : pageDir.pathname + '/';
-  return new URL(`${path}assets/void_lancer_pack/${file}`, pageDir.origin).href;
-}
 
-function assetDataUrl(file) {
-  const pageDir = new URL(window.location.href);
-  const path = pageDir.pathname.endsWith('/') ? pageDir.pathname : pageDir.pathname + '/';
-  return new URL(`${path}assets/data/${file}`, pageDir.origin).href;
-}
 
 class MockupLevelScene extends Phaser.Scene {
   constructor() {
@@ -213,28 +203,32 @@ class MockupLevelScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.json('runtimeAssetManifest', assetDataUrl('runtime_asset_manifest.json'));
+    let basePath = window.location.pathname;
+    if (!basePath.endsWith('/')) basePath += '/';
+    this.load.setBaseURL(basePath + 'assets/');
 
-    this.load.image('bgPlatformFar', assetUrl('bg_platform_far_1.webp'));
-    this.load.image('bgPlatformMid', assetUrl('bg_platform_mid_1.webp'));
-    this.load.image('bgPlatformNear', assetUrl('bg_platform_near_1.webp'));
-    this.load.image('bgPlatformForeground', assetUrl('bg_platform_foreground_sheet_1.webp'));
-    this.load.image('bgDebrisStrip', assetUrl('bg_debris_strip_1.webp'));
-    this.load.image('bgMegaStructureNear', assetUrl('bg_megastructure_near_1.webp'));
-    this.load.image('playerShip', assetUrl('player_ship_idle_1.webp'));
-    this.load.image('playerShipPulse', assetUrl('player_ship_pulse_plus_1.webp'));
-    this.load.image('enemyScout', assetUrl('enemy_scout_idle_1.webp'));
-    this.load.image('enemyZigzag', assetUrl('enemy_zigzag_idle_1.webp'));
-    this.load.image('enemyTurret', assetUrl('enemy_turret_idle_1.webp'));
-    this.load.image('enemyDrone', assetUrl('enemy_drone_idle_1.webp'));
-    this.load.image('bossShip', assetUrl('boss_siege_carrier_base_1.webp'));
-    this.load.image('playerBulletBasic', assetUrl('player_bullet_basic_1.webp'));
-    this.load.image('playerBulletPulse', assetUrl('player_bullet_pulse_plus_1.webp'));
-    this.load.image('pickupPulse', assetUrl('pickup_pulse_plus_1.webp'));
-    this.load.image('uiHudFrame', assetUrl('ui_hud_frame_1.webp'));
-    this.load.image('bossBarFrame', assetUrl('ui_boss_bar_frame_1.webp'));
-    this.load.image('overlayPanel', assetUrl('ui_overlay_panel_1.webp'));
-    this.load.image('titleLogo', assetUrl('ui_title_logo_1.webp'));
+    this.load.json('runtimeAssetManifest', 'data/runtime_asset_manifest.json');
+
+    this.load.image('bgPlatformFar', 'void_lancer_pack/bg_platform_far_1.webp');
+    this.load.image('bgPlatformMid', 'void_lancer_pack/bg_platform_mid_1.webp');
+    this.load.image('bgPlatformNear', 'void_lancer_pack/bg_platform_near_1.webp');
+    this.load.image('bgPlatformForeground', 'void_lancer_pack/bg_platform_foreground_sheet_1.webp');
+    this.load.image('bgDebrisStrip', 'void_lancer_pack/bg_debris_strip_1.webp');
+    this.load.image('bgMegaStructureNear', 'void_lancer_pack/bg_megastructure_near_1.webp');
+    this.load.image('playerShip', 'void_lancer_pack/player_ship_idle_1.webp');
+    this.load.image('playerShipPulse', 'void_lancer_pack/player_ship_pulse_plus_1.webp');
+    this.load.image('enemyScout', 'void_lancer_pack/enemy_scout_idle_1.webp');
+    this.load.image('enemyZigzag', 'void_lancer_pack/enemy_zigzag_idle_1.webp');
+    this.load.image('enemyTurret', 'void_lancer_pack/enemy_turret_idle_1.webp');
+    this.load.image('enemyDrone', 'void_lancer_pack/enemy_drone_idle_1.webp');
+    this.load.image('bossShip', 'void_lancer_pack/boss_siege_carrier_base_1.webp');
+    this.load.image('playerBulletBasic', 'void_lancer_pack/player_bullet_basic_1.webp');
+    this.load.image('playerBulletPulse', 'void_lancer_pack/player_bullet_pulse_plus_1.webp');
+    this.load.image('pickupPulse', 'void_lancer_pack/pickup_pulse_plus_1.webp');
+    this.load.image('uiHudFrame', 'void_lancer_pack/ui_hud_frame_1.webp');
+    this.load.image('bossBarFrame', 'void_lancer_pack/ui_boss_bar_frame_1.webp');
+    this.load.image('overlayPanel', 'void_lancer_pack/ui_overlay_panel_1.webp');
+    this.load.image('titleLogo', 'void_lancer_pack/ui_title_logo_1.webp');
 
     this.load.on('loaderror', (fileObj) => {
       console.error('Asset failed to load:', fileObj.key, fileObj.src);

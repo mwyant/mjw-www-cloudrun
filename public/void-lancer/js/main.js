@@ -30,9 +30,11 @@ const SOUND_STORAGE_KEY = 'voidLancerSoundEnabled';
 const MUSIC_TRACK_URL = './assets/music/lyria_rtype_test_loopable.mp3';
 
 function getMusicUrl() {
-  const pageDir = new URL(window.location.href);
-  const path = pageDir.pathname.endsWith('/') ? pageDir.pathname : pageDir.pathname + '/';
-  return new URL(`${path}assets/music/lyria_rtype_test_loopable.mp3`, pageDir.origin).href;
+  const isDev = window.location.hostname.includes('run.app') || window.location.hostname.includes('dev.');
+  const base = isDev 
+    ? 'https://mikewyantjr-dev-instance-762786769822.us-east1.run.app/void-lancer/' 
+    : window.location.origin + '/void-lancer/';
+  return base + 'assets/music/lyria_rtype_test_loopable.mp3';
 }
 
 const SOUND_LIBRARY = {
@@ -203,9 +205,13 @@ class MockupLevelScene extends Phaser.Scene {
   }
 
   preload() {
-    let basePath = window.location.pathname;
-    if (!basePath.endsWith('/')) basePath += '/';
-    this.load.setBaseURL(basePath + 'assets/');
+    // Determine absolute base path for assets to resolve loading issues across redirects
+    const isDev = window.location.hostname.includes('run.app') || window.location.hostname.includes('dev.');
+    const base = isDev 
+      ? 'https://mikewyantjr-dev-instance-762786769822.us-east1.run.app/void-lancer/' 
+      : window.location.origin + '/void-lancer/';
+    
+    this.load.setBaseURL(base + 'assets/');
 
     this.load.json('runtimeAssetManifest', 'data/runtime_asset_manifest.json');
 

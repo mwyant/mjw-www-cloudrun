@@ -2,10 +2,8 @@ name: Build and Deploy to Cloud Run
 
 on:
   push:
-    branches:
-      - main
-    paths:
-      - 'mjw-webhost/**'
+    tags:
+      - 'main'
 
 env:
   PROJECT_ID: mikewyantjr-dev

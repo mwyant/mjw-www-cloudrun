@@ -30,11 +30,9 @@ const SOUND_STORAGE_KEY = 'voidLancerSoundEnabled';
 const MUSIC_TRACK_URL = './assets/music/lyria_rtype_test_loopable.mp3';
 
 function getMusicUrl() {
-  const isDev = window.location.hostname.includes('run.app') || window.location.hostname.includes('dev.');
-  const base = isDev 
-    ? 'https://mikewyantjr-dev-instance-762786769822.us-east1.run.app/void-lancer/' 
-    : window.location.origin + '/void-lancer/';
-  return base + 'assets/music/lyria_rtype_test_loopable.mp3';
+  let path = window.location.pathname;
+  if (!path.endsWith('/')) path += '/';
+  return window.location.origin + path + 'assets/music/lyria_rtype_test_loopable.mp3';
 }
 
 const SOUND_LIBRARY = {
@@ -205,13 +203,14 @@ class MockupLevelScene extends Phaser.Scene {
   }
 
   preload() {
-    // Determine absolute base path for assets to resolve loading issues across redirects
-    const isDev = window.location.hostname.includes('run.app') || window.location.hostname.includes('dev.');
-    const base = isDev 
-      ? 'https://mikewyantjr-dev-instance-762786769822.us-east1.run.app/void-lancer/' 
-      : window.location.origin + '/void-lancer/';
+    // Determine absolute base path for assets to resolve loading issues
+    // We use the current path but ensure it ends with /void-lancer/assets/
+    let path = window.location.pathname;
+    if (!path.endsWith('/')) path += '/';
     
-    this.load.setBaseURL(base + 'assets/');
+    // If the path doesn't contain void-lancer (e.g. root), we add it
+    // but usually it will be /void-lancer/
+    this.load.setBaseURL(window.location.origin + path + 'assets/');
 
     this.load.json('runtimeAssetManifest', 'data/runtime_asset_manifest.json');
 

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Glass Bridge · Synthetic lookup prototype</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#lookup">Skip to lookup</a>
+  <header class="site-header">
+    <div class="brand"><span class="brand-icon" aria-hidden="true">▱</span><div>Glass Bridge<span class="brand-caption">A clearer path for glass.</span></div></div>
+    <span class="demo-tag"><span aria-hidden="true">●</span> Synthetic demo</span>
+  </header>
+  <main id="lookup">
+    <section class="intro" aria-labelledby="page-title">
+      <div><p class="eyebrow">ANDELA · VISUAL EXPLORATION / 01</p><h1 id="page-title">Good glass.<br>New possibilities.</h1><p class="lede">Explore possible connections between businesses<br class="desktop-break"> with glass and businesses that need it.</p></div>
+      <div class="bridge-art" aria-hidden="true"><div class="pane pane-one"></div><div class="pane pane-two"></div><div class="pane pane-three"></div><span>CONNECT · REUSE · REIMAGINE</span></div>
+    </section>
+    <div class="notice"><span aria-hidden="true">ⓘ</span><p><strong>A place to explore, not a confirmed match.</strong> All businesses and quantities below are invented. No CRM connection or external actions.</p></div>
+    <section class="workspace" aria-label="Glass lookup">
+      <aside class="lookup-panel">
+        <p class="eyebrow">01 / START WITH A BUSINESS</p>
+        <h2>Which way are we looking?</h2>
+        <div class="direction" aria-label="Lookup direction" role="group">
+          <button id="providers" type="button" aria-pressed="true">Find providers <span aria-hidden="true">↗</span></button>
+          <button id="recipients" type="button" aria-pressed="false">Find recipients <span aria-hidden="true">↙</span></button>
+        </div>
+        <p id="direction-hint" class="hint">Start with a glass need. Explore possible sources.</p>
+        <div class="source-card" id="source-card"></div>
+        <div class="scope-note"><span class="tiny-dot" aria-hidden="true"></span><p>Glass fields are mock annotations, not verified Maximizer fields.</p></div>
+      </aside>
+      <section class="results-panel" aria-labelledby="results-heading">
+        <div class="results-heading"><div><p class="eyebrow">02 / EXPLORE THE POSSIBILITIES</p><h2 id="results-heading">Possible providers</h2></div><button class="filter-toggle" type="button" id="filter-toggle" aria-expanded="false" aria-controls="filters">Refine lookup <span aria-hidden="true">＋</span></button></div>
+        <form id="filters" hidden aria-label="Refine synthetic candidates">
+          <div class="filter-grid">
+            <label for="query">Business or ZIP<input id="query" aria-label="Business or ZIP" type="search" placeholder="e.g. Demo or 13439" autocomplete="off"></label>
+            <label for="material">Glass type<select id="material" aria-label="Glass type"><option value="Clear container">Clear container</option><option value="Amber container">Amber container</option><option value="Flat glass">Flat glass</option><option value="">Any glass type</option></select></label>
+            <label for="city">City<select id="city" aria-label="City"><option value="">Any demo city</option><option>Richfield Springs</option><option>Utica</option><option>Cooperstown</option><option>Rome</option></select></label>
+            <label for="transport">Transport annotation<select id="transport" aria-label="Transport annotation"><option value="">Any arrangement</option><option>Pickup proposed</option><option>Delivery proposed</option><option>To discuss</option></select></label>
+          </div>
+          <div class="filter-footer"><p>Exact fixture filters only. No radius or suitability calculation.</p><button class="text-button" id="reset" type="button">Reset filters</button></div>
+        </form>
+        <div class="results-meta"><p id="result-count" role="status" aria-live="polite" aria-atomic="true"></p><span>Not ranked · staff review required</span></div>
+        <div id="results"></div>
+        <div class="review-note"><span aria-hidden="true">↳</span><p><strong>The next step is a conversation.</strong> Staff must confirm material, quantity, contamination, timing and transport before treating any candidate as suitable.</p></div>
+      </section>
+    </section>
+    <section class="reference-note"><p class="eyebrow">SEPARATE FROM DEMO INVENTORY</p><h2>Public recycling context</h2><p>Nearby New York recycling guidance can help frame questions about accepted materials. It does not establish glass for sale, demand or available capacity.</p><a href="public-data-notes.md">Read the cited public-source notes →</a></section>
+  </main>
+  <footer><span>Glass Bridge / Local visual prototype</span><a href="README.md">Design notes & field mapping</a><span>Generated-by: algo-enforcers (GPT-6.1 Sol)</span></footer>
+  <noscript><p class="notice">Enable JavaScript to explore the synthetic lookup. No data is sent externally.</p></noscript>
+</body>
+</html>

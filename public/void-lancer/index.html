@@ -18,20 +18,23 @@
 
     body {
       margin: 0;
+      box-sizing: border-box;
       min-height: 100vh;
+      padding-block: 10px;
       display: grid;
+      grid-template-columns: minmax(0, 1fr);
       place-items: center;
       background-color: var(--clr-bg);
       font-family: var(--font-body);
       color: var(--clr-text);
-      overflow: hidden;
       background: radial-gradient(circle at center, #0a0e1a 0%, #030008 100%);
     }
 
     /* Arcade Box Wrapper */
     .arcade-machine {
       position: relative;
-      width: min(95vw, 1100px);
+      box-sizing: border-box;
+      width: min(95%, 1156px);
       padding: 24px;
       background: linear-gradient(180deg, #1a1f2c 0%, #0b0e14 100%);
       border: 4px solid #2a3142;
@@ -47,7 +50,7 @@
       position: absolute;
       top: -10px; left: 50%;
       transform: translateX(-50%);
-      width: 200px; height: 4px;
+      width: min(200px, 100%); height: 4px;
       background: var(--clr-cerulean);
       box-shadow: 0 0 15px var(--clr-cerulean);
       border-radius: 2px;
@@ -55,6 +58,9 @@
 
     .screen-container {
       position: relative;
+      box-sizing: border-box;
+      width: min(100%, var(--cabinet-screen-limit, 100%));
+      margin-inline: auto;
       background: #000;
       border-radius: 8px;
       overflow: hidden;
@@ -64,6 +70,11 @@
       justify-content: center;
       align-items: center;
       aspect-ratio: 16 / 9;
+    }
+
+    .arcade-machine:fullscreen {
+      --cabinet-screen-limit: max(216px, calc((100vh - 192px) * 16 / 9));
+      overflow: auto;
     }
 
     /* CRT Scanline Overlay */
@@ -107,6 +118,7 @@
 
     .arcade-controls {
       display: flex;
+      flex-wrap: wrap;
       gap: 12px;
     }
 
@@ -123,15 +135,22 @@
       transition: all 0.2s ease;
     }
 
-    .btn-arcade:hover {
+    .btn-arcade:not(:disabled):hover {
       background: rgba(0,229,255,0.1);
       border-color: var(--clr-cerulean);
       box-shadow: 0 0 10px rgba(0,229,255,0.2);
     }
 
+    .btn-arcade:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
     .arcade-footer {
       margin-top: 16px;
       display: flex;
+      flex-wrap: wrap;
+      gap: 4px 12px;
       justify-content: space-between;
       font-size: 0.75rem;
       color: rgba(255,255,255,0.4);
@@ -163,10 +182,24 @@
         gap: 10px;
       }
     }
+
+    @media (max-height: 600px) {
+      .arcade-machine {
+        /* Leave room for cabinet controls; very short windows can still scroll. */
+        --cabinet-screen-limit: max(216px, calc((100vh - 192px) * 16 / 9));
+      }
+      .arcade-header {
+        margin-bottom: 8px;
+        padding-bottom: 8px;
+      }
+      .arcade-footer {
+        margin-top: 8px;
+      }
+    }
   </style>
 </head>
 <body>
-  <div class="arcade-machine">
+  <div class="arcade-machine" id="appShell">
     <div class="arcade-header">
       <div class="brand-zone">
         <h1 class="arcade-title">Void Lancer</h1>
@@ -191,16 +224,6 @@
   <!-- Scripts -->
   <script src="./js/phaser.min.js"></script>
   <script src="./js/level1_stage_data.js"></script>
-  <script src="./js/main.js?v=3"></script>
-  <script>
-    // Handle Fullscreen via Phaser or DOM
-    document.getElementById('fullscreenBtn').addEventListener('click', () => {
-      if (!document.fullscreenElement) {
-        document.querySelector('.arcade-machine').requestFullscreen();
-      } else {
-        document.exitFullscreen();
-      }
-    });
-  </script>
+  <script src="./js/main.js?v=4"></script>
 </body>
 </html>

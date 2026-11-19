@@ -2489,12 +2489,20 @@ class MockupLevelScene extends Phaser.Scene {
 
 const shell = document.getElementById('appShell');
 const fullscreenBtn = document.getElementById('fullscreenBtn');
+const fullscreenSupported = document.fullscreenEnabled !== false
+  && typeof shell?.requestFullscreen === 'function'
+  && typeof document.exitFullscreen === 'function';
+let fullscreenPending = false;
 
 function updateFullscreenButton() {
-  fullscreenBtn.textContent = document.fullscreenElement === shell ? 'Exit Full Screen' : 'Full Screen';
+  fullscreenBtn.disabled = !fullscreenSupported;
+  fullscreenBtn.textContent = !fullscreenSupported ? 'Fullscreen Unavailable'
+    : document.fullscreenElement === shell ? 'Exit Full Screen' : 'Full Screen';
 }
 
 async function toggleFullscreen() {
+  if (!fullscreenSupported || fullscreenPending) return;
+  fullscreenPending = true;
   try {
     if (document.fullscreenElement === shell) {
       await document.exitFullscreen();
@@ -2503,17 +2511,26 @@ async function toggleFullscreen() {
     }
   } catch (error) {
     console.warn('Fullscreen toggle failed', error);
+  } finally {
+    fullscreenPending = false;
+    updateFullscreenButton();
   }
-  updateFullscreenButton();
 }
 
 fullscreenBtn.addEventListener('click', toggleFullscreen);
 document.addEventListener('fullscreenchange', updateFullscreenButton);
 document.addEventListener('keydown', (event) => {
-  if (event.code === 'KeyF' && !event.repeat) {
-    event.preventDefault();
-    toggleFullscreen();
-  }
+  if (!fullscreenSupported || event.code !== 'KeyF' || event.defaultPrevented || event.repeat
+    || event.isComposing || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey
+    || document.designMode === 'on') return;
+  if (event.composedPath().some((node) => node instanceof Element && (
+    node.isContentEditable || node.matches(
+      'a[href], button, input, select, textarea, label, summary, audio[controls], video[controls], [tabindex],'
+      + ' [role="button"], [role="link"], [role="textbox"], [role="combobox"], [role="slider"], [role="spinbutton"]'
+    )
+  ))) return;
+  event.preventDefault();
+  toggleFullscreen();
 });
 updateFullscreenButton();
 

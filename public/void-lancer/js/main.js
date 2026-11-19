@@ -1449,7 +1449,7 @@ class MockupLevelScene extends Phaser.Scene {
 
         if (!bullet.dead) {
           for (const enemy of this.state.enemies) {
-          if (this.circleHit(bullet.x, bullet.y, bullet.radius, enemy.x, enemy.y, enemy.radius)) {
+          if (enemy.hp > 0 && this.circleHit(bullet.x, bullet.y, bullet.radius, enemy.x, enemy.y, enemy.radius)) {
             bullet.dead = true;
             enemy.hp -= bullet.damage;
             this.spawnHitSpark(bullet.x, bullet.y, { baseScale: 0.5, peakScale: 1.1, burstDistance: 22 });

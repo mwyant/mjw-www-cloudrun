@@ -517,7 +517,7 @@ class MockupLevelScene extends Phaser.Scene {
     this.showOverlay(
       'Launch Window Open',
       'Escort corridor zero is hot. Survive the opening waves, grab the pulse upgrade, and break the siege carrier at the end of the lane.',
-      'Move with arrow keys or WASD. Fire with Space, J, or K. Press the button or fire once to begin.',
+      'Default controls: WASD / arrows to move, Space / J / K to fire or start.',
       'Start Sortie',
       { tag: 'Mission Briefing', accent: COLORS.cyan, subtitle: 'VOID LANCER // FIRST SORTIE' }
     );
@@ -532,6 +532,7 @@ class MockupLevelScene extends Phaser.Scene {
 
   finishGame(victory) {
     this.state.mode = victory ? 'victory' : 'gameover';
+    this.actionState.clear();
     this.showOverlay(
       victory ? 'Sortie Complete' : 'Mission Failed',
       victory
@@ -1253,10 +1254,10 @@ class MockupLevelScene extends Phaser.Scene {
     let dx = 0;
     let dy = 0;
 
-    if (this.cursors.up.isDown || this.keys.up.isDown) dy -= 1;
-    if (this.cursors.down.isDown || this.keys.down.isDown) dy += 1;
-    if (this.cursors.left.isDown || this.keys.left.isDown) dx -= 1;
-    if (this.cursors.right.isDown || this.keys.right.isDown) dx += 1;
+    if (this.actionState.isHeld('moveUp')) dy -= 1;
+    if (this.actionState.isHeld('moveDown')) dy += 1;
+    if (this.actionState.isHeld('moveLeft')) dx -= 1;
+    if (this.actionState.isHeld('moveRight')) dx += 1;
 
     const len = Math.hypot(dx, dy) || 1;
     p.x += (dx / len) * p.speed * dt;
@@ -1266,7 +1267,7 @@ class MockupLevelScene extends Phaser.Scene {
     p.cooldown = Math.max(0, p.cooldown - dt);
     p.invuln = Math.max(0, p.invuln - dt);
 
-    const firing = this.keys.fireSpace.isDown || this.keys.fireJ.isDown || this.keys.fireK.isDown;
+    const firing = this.actionState.isHeld('fire');
     if (firing && p.cooldown <= 0) {
       p.cooldown = p.weaponLevel > 1 ? 0.14 : 0.18;
       this.spawnBullet('player', p.x + 24, p.y, 560, 0, 4, 8, '#7ae7ff');
@@ -1832,33 +1833,30 @@ class MockupLevelScene extends Phaser.Scene {
       backgroundColor: '#71e7ff',
       padding: { left: 18, right: 18, top: 10, bottom: 10 },
     }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setVisible(false).setDepth(DEPTH.overlay + 3);
-    this.overlayButton.on('pointerup', () => {
-      if (this.state.mode === 'intro' || this.state.mode === 'victory' || this.state.mode === 'gameover') {
-        this.startGame();
-      }
-    });
+    this.overlayButton.on('pointerup', () => this.actionState.requestStart());
+  }
+
+  getControlContext() {
+    const mode = this.state?.mode;
+    if (mode === 'playing') return 'play';
+    if (mode === 'intro' || mode === 'victory' || mode === 'gameover') return 'overlay';
+    return null;
   }
 
   setupInput() {
-    this.cursors = this.input.keyboard.createCursorKeys();
-    this.keys = this.input.keyboard.addKeys({
-      up: Phaser.Input.Keyboard.KeyCodes.W,
-      down: Phaser.Input.Keyboard.KeyCodes.S,
-      left: Phaser.Input.Keyboard.KeyCodes.A,
-      right: Phaser.Input.Keyboard.KeyCodes.D,
-      fireJ: Phaser.Input.Keyboard.KeyCodes.J,
-      fireK: Phaser.Input.Keyboard.KeyCodes.K,
-      fireSpace: Phaser.Input.Keyboard.KeyCodes.SPACE,
+    this.actionState = VoidLancerInput.createActionState(() => {
+      if (this.getControlContext() === 'overlay') this.startGame();
     });
-
-    this.input.keyboard.on('keydown', (event) => {
-      if (event.code === 'Space' || event.code === 'KeyJ' || event.code === 'KeyK') {
-        if (this.state.mode === 'intro' || this.state.mode === 'victory' || this.state.mode === 'gameover') {
-          event.preventDefault();
-          this.startGame();
-        }
-      }
-    });
+    const keyboard = VoidLancerInput.attachKeyboard(window, document, this.actionState, () => this.getControlContext());
+    window.voidLancerControls = keyboard.mapping;
+    const cleanup = () => {
+      keyboard.destroy();
+      if (window.voidLancerControls === keyboard.mapping) delete window.voidLancerControls;
+      this.events.off('shutdown', cleanup);
+      this.events.off('destroy', cleanup);
+    };
+    this.events.once('shutdown', cleanup);
+    this.events.once('destroy', cleanup);
   }
 
   setupBackground() {
@@ -2521,14 +2519,8 @@ fullscreenBtn.addEventListener('click', toggleFullscreen);
 document.addEventListener('fullscreenchange', updateFullscreenButton);
 document.addEventListener('keydown', (event) => {
   if (!fullscreenSupported || event.code !== 'KeyF' || event.defaultPrevented || event.repeat
-    || event.isComposing || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey
-    || document.designMode === 'on') return;
-  if (event.composedPath().some((node) => node instanceof Element && (
-    node.isContentEditable || node.matches(
-      'a[href], button, input, select, textarea, label, summary, audio[controls], video[controls], [tabindex],'
-      + ' [role="button"], [role="link"], [role="textbox"], [role="combobox"], [role="slider"], [role="spinbutton"]'
-    )
-  ))) return;
+    || event.isComposing || VoidLancerInput.hasModifiers(event)
+    || VoidLancerInput.isInteractiveEvent(event, document)) return;
   event.preventDefault();
   toggleFullscreen();
 });
@@ -2541,6 +2533,7 @@ new Phaser.Game({
   height: GAME_HEIGHT,
   parent: 'game-root',
   backgroundColor: '#050b16',
+  input: { keyboard: false },
   scene: [MockupLevelScene],
   scale: {
     mode: Phaser.Scale.FIT,

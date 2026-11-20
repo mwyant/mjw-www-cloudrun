@@ -26,6 +26,11 @@ const COLORS = {
   panel: 0x08111f,
 };
 
+const PROJECTILE_COLORS = {
+  player: { body: 0x28afff, highlight: 0xc5efff, outline: 0x062944 },
+  enemy: { body: 0xe92350, highlight: 0xffa4b4, outline: 0x430814 },
+};
+
 const SOUND_STORAGE_KEY = 'voidLancerSoundEnabled';
 const MUSIC_TRACK_URL = './assets/music/lyria_rtype_test_loopable.mp3';
 
@@ -697,31 +702,27 @@ class MockupLevelScene extends Phaser.Scene {
     return enemy;
   }
 
-  spawnBullet(owner, x, y, vx, vy, radius, damage, tint) {
+  spawnBullet(owner, x, y, vx, vy, radius, damage, variant) {
     const isPlayer = owner === 'player';
-    const color = tint ?? (isPlayer ? '#7ae7ff' : '#ff7f8f');
-    let sprite;
+    const { body, highlight, outline } = isPlayer ? PROJECTILE_COLORS.player : PROJECTILE_COLORS.enemy;
+    let children;
 
     if (isPlayer) {
-      const isPulse = color === '#ffd65a';
-      const glow = this.add.ellipse(0, 0, isPulse ? 34 : 26, isPulse ? 16 : 12, isPulse ? COLORS.gold : COLORS.cyan, 0.28);
-      const trail = this.add.rectangle(-8, 0, isPulse ? 12 : 9, isPulse ? 4 : 3, isPulse ? COLORS.gold : COLORS.cyan, 0.45);
-      const core = this.add.rectangle(2, 0, isPulse ? 18 : 14, isPulse ? 5 : 4, COLORS.white, 0.96);
-      const accent = isPulse ? this.add.rectangle(8, 0, 5, 2, COLORS.gold, 0.95) : null;
-      const children = accent ? [glow, trail, core, accent] : [glow, trail, core];
-      sprite = this.add.container(x, y, children).setDepth(DEPTH.bullets);
-    } else if (color === '#ffd65a') {
-      const glow = this.add.ellipse(0, 0, 26, 26, COLORS.gold, 0.3);
-      const body = this.add.ellipse(0, 0, 16, 16, COLORS.gold, 0.95);
-      const core = this.add.ellipse(0, 0, 7, 7, COLORS.white, 0.95);
-      sprite = this.add.container(x, y, [glow, body, core]).setDepth(DEPTH.bullets);
+      const isPulse = variant === 'pulse';
+      const glow = this.add.ellipse(0, 0, isPulse ? 34 : 26, isPulse ? 16 : 12, body, 0.28);
+      const streak = this.add.rectangle(0, 0, isPulse ? 24 : 20, isPulse ? 7 : 6, body)
+        .setStrokeStyle(2, outline);
+      const core = this.add.rectangle(2, 0, isPulse ? 16 : 12, 2, highlight);
+      children = [glow, streak, core];
     } else {
-      const glow = this.add.ellipse(0, 0, 22, 14, COLORS.red, 0.24);
-      const trail = this.add.rectangle(8, 0, 6, 2, 0xff8a9a, 0.45);
-      const core = this.add.rectangle(0, 0, 14, 4, COLORS.red, 0.95);
-      const hotCore = this.add.rectangle(2, 0, 7, 2, 0xffb0bf, 0.9);
-      sprite = this.add.container(x, y, [glow, trail, core, hotCore]).setDepth(DEPTH.bullets);
+      const isBurst = variant === 'burst';
+      const glow = this.add.ellipse(0, 0, isBurst ? 26 : 22, isBurst ? 26 : 16, body, 0.3);
+      const pellet = this.add.ellipse(0, 0, isBurst ? 16 : 13, isBurst ? 16 : 10, body)
+        .setStrokeStyle(2, outline);
+      const core = this.add.ellipse(isBurst ? 0 : 2, 0, isBurst ? 7 : 5, isBurst ? 7 : 4, highlight);
+      children = [glow, pellet, core];
     }
+    const sprite = this.add.container(x, y, children).setDepth(DEPTH.bullets);
 
     const bullet = {
       owner,
@@ -947,7 +948,7 @@ class MockupLevelScene extends Phaser.Scene {
 
     for (let i = 0; i < burstCount; i += 1) {
       const offsetY = (i - (burstCount - 1) / 2) * 11;
-      this.spawnBullet('enemy', ventOriginX, ventOriginY + offsetY, -250 - i * 18, offsetY * 2.8, 4, 1, '#ffd65a');
+      this.spawnBullet('enemy', ventOriginX, ventOriginY + offsetY, -250 - i * 18, offsetY * 2.8, 4, 1, 'burst');
     }
 
     this.spawnHitSpark(ventOriginX + 6, ventOriginY, {
@@ -1273,10 +1274,10 @@ class MockupLevelScene extends Phaser.Scene {
     const firing = this.actionState.isHeld('fire');
     if (firing && p.cooldown <= 0) {
       p.cooldown = p.weaponLevel > 1 ? 0.14 : 0.18;
-      this.spawnBullet('player', p.x + 24, p.y, 560, 0, 4, 8, '#7ae7ff');
+      this.spawnBullet('player', p.x + 24, p.y, 560, 0, 4, 8);
       if (p.weaponLevel > 1) {
-        this.spawnBullet('player', p.x + 16, p.y - 10, 520, -90, 3, 6, '#ffd65a');
-        this.spawnBullet('player', p.x + 16, p.y + 10, 520, 90, 3, 6, '#ffd65a');
+        this.spawnBullet('player', p.x + 16, p.y - 10, 520, -90, 3, 6, 'pulse');
+        this.spawnBullet('player', p.x + 16, p.y + 10, 520, 90, 3, 6, 'pulse');
       }
       this.playSound('playerFire', { volume: p.weaponLevel > 1 ? 0.22 : 0.18 });
       this.primePlayerRecoil();
@@ -1324,7 +1325,7 @@ class MockupLevelScene extends Phaser.Scene {
           enemy.fireCooldown = 1.4;
           const dy = this.state.player.y - enemy.y;
           const aim = this.clamp(dy * 1.2, -180, 180);
-          this.spawnBullet('enemy', enemy.x - enemy.radius, enemy.y, -280, aim, 5, 1, '#ff7f8f');
+          this.spawnBullet('enemy', enemy.x - enemy.radius, enemy.y, -280, aim, 5, 1);
           this.playSound('enemyFire', { volume: enemy.type === 'turret' ? 0.14 : 0.12, detune: enemy.type === 'turret' ? 0 : -20 });
         }
       } else if (enemy.type === 'drone') {
@@ -1369,7 +1370,7 @@ class MockupLevelScene extends Phaser.Scene {
       boss.fireCooldown = boss.phase === 1 ? 1.1 : 0.7;
       const spreads = boss.phase === 1 ? [-0.16, 0, 0.16] : [-0.28, -0.1, 0.1, 0.28];
       for (const spread of spreads) {
-        this.spawnBullet('enemy', boss.x - 54, boss.y + spread * 180, -330, spread * 150, 6, 1, '#ff697b');
+        this.spawnBullet('enemy', boss.x - 54, boss.y + spread * 180, -330, spread * 150, 6, 1);
       }
       this.playSound('enemyFire', { volume: boss.phase === 1 ? 0.16 : 0.18, detune: -60 });
     }
@@ -1377,7 +1378,7 @@ class MockupLevelScene extends Phaser.Scene {
     if (boss.burstCooldown <= 0) {
       boss.burstCooldown = boss.phase === 1 ? 3.2 : 2.3;
       for (let i = -2; i <= 2; i += 1) {
-        this.spawnBullet('enemy', boss.x - 40, boss.y, -260, i * 90, 5, 1, '#ffd65a');
+        this.spawnBullet('enemy', boss.x - 40, boss.y, -260, i * 90, 5, 1, 'burst');
       }
     }
 

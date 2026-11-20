@@ -146,6 +146,113 @@
       cursor: not-allowed;
     }
 
+    .touch-station {
+      display: none;
+    }
+
+    @media (any-pointer: coarse) {
+      .playfield[data-touch-ready] {
+        --touch-pad-size: clamp(100px, 32vw, 136px);
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        grid-template-areas: "screen screen" "move right";
+        align-items: center;
+        gap: 10px;
+      }
+
+      .playfield[data-touch-ready] .screen-container {
+        grid-area: screen;
+      }
+
+      .playfield[data-touch-ready] .touch-station {
+        display: grid;
+        place-items: center;
+        gap: 4px;
+      }
+
+      .touch-move { grid-area: move; justify-self: start; }
+      .touch-right { grid-area: right; justify-self: end; }
+
+      .touch-caption {
+        color: #9fb2cc;
+        font-size: 0.7rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .touch-pad, .touch-button {
+        box-sizing: border-box;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+      }
+
+      .touch-pad {
+        display: grid;
+        grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+        place-items: stretch;
+        padding: 4px;
+        width: var(--touch-pad-size);
+        aspect-ratio: 1;
+        border: 1px solid var(--clr-arcade-border);
+        border-radius: 14px;
+        background: var(--clr-arcade-panel);
+        color: #a9d5e8;
+        font: bold 1.35rem/1 system-ui, sans-serif;
+      }
+
+      .touch-pad[aria-disabled="true"] { opacity: 0.55; }
+
+      .touch-pad span {
+        display: grid;
+        place-items: center;
+        border-radius: 5px;
+        background: rgba(0, 229, 255, 0.08);
+        pointer-events: none;
+      }
+
+      .touch-up { grid-area: 1 / 2; }
+      .touch-left { grid-area: 2 / 1; }
+      .touch-center { grid-area: 2 / 2; }
+      .touch-right-arrow { grid-area: 2 / 3; }
+      .touch-down { grid-area: 3 / 2; }
+
+      .touch-pad[data-directions~="moveUp"] .touch-up,
+      .touch-pad[data-directions~="moveLeft"] .touch-left,
+      .touch-pad[data-directions~="moveRight"] .touch-right-arrow,
+      .touch-pad[data-directions~="moveDown"] .touch-down,
+      .btn-arcade.touch-button[data-firing] {
+        background: var(--clr-cerulean);
+        color: #07111f;
+        box-shadow: 0 0 12px rgba(0, 229, 255, 0.35);
+      }
+
+      .touch-button {
+        width: var(--touch-pad-size);
+        min-height: 52px;
+        padding: 8px;
+        font-weight: bold;
+      }
+
+      #touchFire {
+        width: min(88px, var(--touch-pad-size));
+        aspect-ratio: 1;
+        border-radius: 50%;
+        border-width: 2px;
+      }
+
+      #touchStart {
+        background: #71e7ff;
+        color: #07111f;
+      }
+
+      .touch-button:focus-visible {
+        outline: 2px solid #fff;
+        outline-offset: 3px;
+      }
+    }
+
     .arcade-footer {
       margin-top: 16px;
       display: flex;
@@ -196,6 +303,30 @@
         margin-top: 8px;
       }
     }
+
+    @media (any-pointer: coarse) and (orientation: landscape) and (max-height: 600px) {
+      .arcade-machine, .arcade-machine:fullscreen {
+        /* Reserve height for the cabinet header, footer and outer padding. */
+        --cabinet-screen-limit: max(160px, calc((100dvh - 150px) * 16 / 9));
+        padding: 8px;
+      }
+
+      .arcade-header {
+        flex-direction: row;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 4px 8px;
+        margin-bottom: 6px;
+        padding-bottom: 6px;
+      }
+
+      .playfield[data-touch-ready] {
+        --touch-pad-size: clamp(84px, 20dvh, 108px);
+        grid-template-columns: var(--touch-pad-size) minmax(0, 1fr) var(--touch-pad-size);
+        grid-template-areas: "move screen right";
+        gap: 6px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -211,8 +342,24 @@
       </div>
     </div>
 
-    <div class="screen-container">
-      <div id="game-root"></div>
+    <div class="playfield" id="playfield">
+      <div class="screen-container">
+        <div id="game-root"></div>
+      </div>
+      <div class="touch-station touch-move">
+        <div class="touch-pad" id="touchPad" role="group" aria-label="Movement pad: touch and slide in any direction">
+          <span class="touch-up" aria-hidden="true">▲</span>
+          <span class="touch-left" aria-hidden="true">◀</span>
+          <span class="touch-center" aria-hidden="true">•</span>
+          <span class="touch-right-arrow" aria-hidden="true">▶</span>
+          <span class="touch-down" aria-hidden="true">▼</span>
+        </div>
+        <div class="touch-caption" aria-hidden="true">Move</div>
+      </div>
+      <div class="touch-station touch-right">
+        <button class="btn-arcade touch-button" id="touchFire" type="button" aria-label="Hold to fire" tabindex="-1" hidden>Fire</button>
+        <button class="btn-arcade touch-button" id="touchStart" type="button" hidden>Start Sortie</button>
+      </div>
     </div>
 
     <div class="arcade-footer">
@@ -224,7 +371,7 @@
   <!-- Scripts -->
   <script src="./js/phaser.min.js"></script>
   <script src="./js/level1_stage_data.js"></script>
-  <script src="./js/controls.js"></script>
-  <script src="./js/main.js?v=5"></script>
+  <script src="./js/controls.js?v=2"></script>
+  <script src="./js/main.js?v=6"></script>
 </body>
 </html>

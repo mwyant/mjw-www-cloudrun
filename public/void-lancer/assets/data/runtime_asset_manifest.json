@@ -22,7 +22,7 @@
     }
   },
   "boss": {
-    "displaySize": [244, 142],
+    "displaySize": [216, 144],
     "collisionRadius": 58
   },
   "pickup": {

@@ -59,7 +59,7 @@ const DEFAULT_ASSET_MANIFEST = {
     turret: { displaySize: [74, 52], collisionRadius: 21 },
     drone: { displaySize: [52, 52], collisionRadius: 14 },
   },
-  boss: { displaySize: [244, 142], collisionRadius: 58 },
+  boss: { displaySize: [216, 144], collisionRadius: 58 },
   pickup: { displaySize: [30, 30], collisionRadius: 13 },
   bullet: {
     player: { radius: 4 },
@@ -1700,7 +1700,9 @@ class MockupLevelScene extends Phaser.Scene {
       this.bossBarGlow.alpha = 0.16 + (1 - ratio) * 0.18 + bossPulse * 0.22;
       if (bossFlash > 0) this.state.boss.sprite.setTint(0xffffff);
       else this.state.boss.sprite.clearTint();
-      this.state.boss.sprite.setScale(1 + bossPulse * 0.02);
+      const { displaySize } = this.assetManifest?.boss || DEFAULT_ASSET_MANIFEST.boss;
+      const pulseScale = 1 + bossPulse * 0.02;
+      this.state.boss.sprite.setDisplaySize(displaySize[0] * pulseScale, displaySize[1] * pulseScale);
       this.state.boss.hitFlash = Math.max(0, bossFlash - 0.08);
       this.state.boss.corePulse = Math.max(0, bossPulse - 0.06);
     }

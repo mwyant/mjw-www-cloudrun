@@ -1,39 +1,47 @@
 #!/usr/bin/env bash
 # mjw-webhost/scripts/smoke-test-cloud-run.sh
-# Verifies the Cloud Run service is responding correctly.
+# Verifies that the site homepage and health endpoint respond correctly.
 
 set -euo pipefail
 
 SERVICE_NAME="mikewyantjr-www"
 REGION="us-east1"
 
-# Get the URL of the service
-echo "Fetching Cloud Run URL for $SERVICE_NAME..."
-URL=$(gcloud run services describe "$SERVICE_NAME" --platform managed --region "$REGION" --format 'value(status.url)' || true)
+URL="${1:-${CLOUD_RUN_URL:-}}"
 
 if [ -z "$URL" ]; then
-  echo "ERROR: Could not fetch URL for $SERVICE_NAME. Is it deployed?"
-  exit 1
+  echo "Fetching Cloud Run URL for $SERVICE_NAME..."
+  URL=$(gcloud run services describe "$SERVICE_NAME" --platform managed --region "$REGION" --format 'value(status.url)' || true)
+  if [ -z "$URL" ]; then
+    echo "ERROR: Could not fetch URL for $SERVICE_NAME. Pass a base URL or check gcloud access."
+    exit 1
+  fi
 fi
 
+URL="${URL%/}"
 echo "Testing URL: $URL"
 
-# Test root endpoint
-echo "Checking / (expect 200 OK)..."
-code=$(curl -s -o /dev/null -w "%{http_code}" "$URL/")
-echo "  / -> $code"
-if [ "$code" != "200" ]; then
-  echo "FAIL: / did not return 200 OK"
+# Verify the root serves the expected homepage, not just any successful response.
+echo "Checking / (expect the Mike Wyant Jr. homepage)..."
+if ! homepage=$(curl --fail --silent --show-error "$URL/"); then
+  echo "FAIL: / did not return a successful response"
   exit 1
 fi
+if [[ "$homepage" != *'<title>Mike Wyant Jr. | Sci-Fi & Fantasy Author</title>'* ]]; then
+  echo "FAIL: / did not contain the expected homepage title"
+  exit 1
+fi
+echo "  / -> expected homepage"
 
-# Test ping endpoint
-echo "Checking /ping (expect 200 OK)..."
-code=$(curl -s -o /dev/null -w "%{http_code}" "$URL/ping")
-echo "  /ping -> $code"
-if [ "$code" != "200" ]; then
-  echo "FAIL: /ping did not return 200 OK"
+echo "Checking /ping (expect OK)..."
+if ! ping=$(curl --fail --silent --show-error "$URL/ping"); then
+  echo "FAIL: /ping did not return a successful response"
   exit 1
 fi
+if [ "$ping" != "OK" ]; then
+  echo "FAIL: /ping did not return OK"
+  exit 1
+fi
+echo "  /ping -> OK"
 
 echo "Smoke test PASSED"

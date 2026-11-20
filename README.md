@@ -3,27 +3,38 @@
 This directory contains the source and configuration for migrating `mikewyantjr.com` from a hosted VM to a containerized application running on Google Cloud Run.
 
 ## Overview
-- **mikewyantjr.com** is served via `caddy:alpine` inside a container.
+- **mikewyantjr.com** is served by Caddy inside a container, pinned to version
+  `2.11.9-alpine` and its image digest in the `Dockerfile`.
 - **Cloud Run** manages the runtime environment, auto-scaling, and SSL/TLS certificates.
-- **Deployment** is automated via GitHub Actions (`.github/workflows/cloud-run.yaml`).
+- **Production deployment** is through Cloud Run's connected repository integration, not a GitHub Actions workflow.
 
 ## Structure
 - `public/`: The static website content (Webflow export).
-- `Dockerfile`: Multi-stage build for the static site container.
+- `Dockerfile`: Builds the static site container from the repository root.
 - `Caddyfile`: Caddy configuration with Cloud Run `${PORT}` support and `/ping` endpoint.
-- `.github/workflows/cloud-run.yaml`: CI/CD pipeline for building and deploying.
+- `.github/workflows/cloud-run.yaml` and `.github/workflows/cloud-run-dev.yaml`: workflow files that are not the production deployment path; their current use is not specified here.
 - `archive/legacy-stack/`: Contains the original `docker-compose.yml` and `Caddyfile` for reference.
 
 ## Local Development & Testing
-To build and run the container locally:
+From the repository root, build and run the container locally:
 ```bash
 # Build the image
-docker build -t mjw-www ./mjw-webhost
+docker build -t mjw-www .
 
 # Run the container (listening on port 8080)
-docker run -p 8080:8080 -e PORT=8080 mjw-www
+docker run --rm -p 8080:8080 -e PORT=8080 mjw-www
 ```
-Once running, verify at `http://localhost:8080/` and `http://localhost:8080/ping`.
+The Caddy base image is pinned, and the homepage at `/` is resolved explicitly.
+With the container running, verify its response locally:
+
+```bash
+bash scripts/smoke-test-cloud-run.sh http://localhost:8080
+```
+
+The smoke check confirms that `/` serves the expected homepage title and that
+`/ping` returns `OK`. Pass a base URL as the first argument or set
+`CLOUD_RUN_URL`; without either, the script looks up the Cloud Run URL with
+`gcloud`.
 
 ## Void Lancer controls
 
@@ -71,10 +82,11 @@ upstream implementation's logical-key and chord matching.
 
 Run the VM tests with `node --test scripts/void-lancer-*.test.cjs`.
 
-## GitHub Actions Deployment
-The deployment pipeline triggers on pushes to the `main` branch that modify files in `mjw-webhost/`.
-1. **Credentials**: Requires a GitHub secret `GCP_SA_KEY` containing the JSON service account key for a service account in `mikewyantjr-dev` with Cloud Run and Artifact Registry permissions.
-2. **Steps**: Authenticate to GCP, build and push to Artifact Registry, and deploy to Cloud Run.
+## Production Deployment
+Production deployment is handled by Cloud Run's connected repository
+integration. It is not triggered by GitHub Actions. The workflow files under
+`.github/workflows/` are not the production deployment mechanism; their
+current use is not specified here.
 
 ## DNS & Custom Domains
 After deployment, follow Google Cloud Run domain mapping instructions:
@@ -82,7 +94,9 @@ After deployment, follow Google Cloud Run domain mapping instructions:
 2. Update DNS A-records for `@` (apex) and CNAME for `www` according to Google's provided IPs.
 
 ## Health Check
-The container exposes a `/ping` endpoint that returns `OK` (200). Cloud Run uses this to verify the container is ready.
+The Caddy configuration provides a `/ping` endpoint that returns `OK` (200).
+Use it alongside `/` in smoke checks; this documentation does not assume that
+Cloud Run is configured to use `/ping` as a platform health probe.
 ```bash
 curl https://<cloud-run-url>/ping
 ```

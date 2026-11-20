@@ -517,13 +517,14 @@ class MockupLevelScene extends Phaser.Scene {
     this.showOverlay(
       'Launch Window Open',
       'Escort corridor zero is hot. Survive the opening waves, grab the pulse upgrade, and break the siege carrier at the end of the lane.',
-      'Default controls: WASD / arrows to move, Space / J / K to fire or start.',
+      'Touch: use the pad and hold Fire. Keyboard: WASD / arrows, Space / J / K.',
       'Start Sortie',
       { tag: 'Mission Briefing', accent: COLORS.cyan, subtitle: 'VOID LANCER // FIRST SORTIE' }
     );
   }
 
   startGame() {
+    this.actionState.clear();
     this.startMusicPlayback();
     this.resetGame();
     this.state.mode = 'playing';
@@ -566,6 +567,7 @@ class MockupLevelScene extends Phaser.Scene {
     this.overlayControls.setText(detail).setVisible(true);
     this.overlayControls.setColor('#8ea6cd');
     this.overlayButton.setText(buttonLabel).setVisible(true);
+    this.touchControls?.setOverlay(buttonLabel);
     this.overlayButton.setPadding(18, 10, 18, 10);
     this.overlayButton.setBackgroundColor(`#${accent.toString(16).padStart(6, '0')}`);
     this.overlayButton.setColor(accent === COLORS.red ? '#ffffff' : '#07111f');
@@ -600,6 +602,7 @@ class MockupLevelScene extends Phaser.Scene {
     this.overlaySubtitle.setVisible(false);
     this.overlayControls.setVisible(false);
     this.overlayButton.setVisible(false);
+    this.touchControls?.setOverlay(null);
   }
 
   buildWavePlan() {
@@ -1848,9 +1851,13 @@ class MockupLevelScene extends Phaser.Scene {
       if (this.getControlContext() === 'overlay') this.startGame();
     });
     const keyboard = VoidLancerInput.attachKeyboard(window, document, this.actionState, () => this.getControlContext());
+    const playfield = document.getElementById('playfield');
+    const touch = playfield && VoidLancerInput.attachTouch(playfield, this.actionState, () => this.getControlContext());
+    this.touchControls = touch;
     window.voidLancerControls = keyboard.mapping;
     const cleanup = () => {
       keyboard.destroy();
+      touch?.destroy();
       if (window.voidLancerControls === keyboard.mapping) delete window.voidLancerControls;
       this.events.off('shutdown', cleanup);
       this.events.off('destroy', cleanup);

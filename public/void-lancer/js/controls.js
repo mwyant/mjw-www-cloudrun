@@ -64,9 +64,9 @@ const VoidLancerInput = (() => {
   }
 
   // Source IDs are independent, so releasing one binding never drops another.
-  // A later adapter can use its own source IDs and issue the same semantic start pulse.
   function createActionState(onStart) {
     const held = new Map(PLAY_ACTIONS.map((action) => [action, new Set()]));
+    const clearListeners = new Set();
     return {
       isHeld: (action) => (held.get(action)?.size ?? 0) > 0,
       setHeld(action, source, down) {
@@ -74,8 +74,13 @@ const VoidLancerInput = (() => {
         else held.get(action)?.delete(source);
       },
       requestStart: onStart,
+      onClear(listener) {
+        clearListeners.add(listener);
+        return () => clearListeners.delete(listener);
+      },
       clear() {
         for (const sources of held.values()) sources.clear();
+        for (const listener of clearListeners) listener();
       },
     };
   }
@@ -85,14 +90,19 @@ const VoidLancerInput = (() => {
     let attached = true;
     const pressed = new Map();
 
-    function clear() {
+    function clearKeyboard() {
+      for (const { action, source } of pressed.values()) actions.setHeld(action, source, false);
       pressed.clear();
+    }
+
+    function clear() {
+      clearKeyboard();
       actions.clear();
     }
 
     function onKeyDown(event) {
       if (hasModifiers(event) || event.isComposing) {
-        clear();
+        clearKeyboard();
         return;
       }
       if (event.defaultPrevented || documentTarget.hidden || isInteractiveEvent(event, documentTarget)) return;
@@ -119,7 +129,7 @@ const VoidLancerInput = (() => {
     }
 
     function onFocusIn(event) {
-      if (isInteractiveEvent(event, documentTarget)) clear();
+      if (isInteractiveEvent(event, documentTarget)) clearKeyboard();
     }
 
     function onVisibilityChange() {
@@ -163,5 +173,116 @@ const VoidLancerInput = (() => {
     };
   }
 
-  return { createActionState, attachKeyboard, isInteractiveEvent, hasModifiers };
+  function attachTouch(playfield, actions, getContext) {
+    const pad = playfield.querySelector('#touchPad');
+    const fire = playfield.querySelector('#touchFire');
+    const start = playfield.querySelector('#touchStart');
+    const pointers = new Map();
+    const controls = [pad, fire, start];
+
+    function updateFeedback() {
+      const held = new Set([...pointers.values()].flatMap((pointer) => pointer.held));
+      pad.dataset.directions = [...held].join(' ');
+      fire.toggleAttribute('data-firing', held.has('fire'));
+    }
+
+    function setHeld(pointer, next) {
+      for (const action of pointer.held) {
+        if (!next.includes(action)) actions.setHeld(action, pointer.source, false);
+      }
+      for (const action of next) {
+        if (!pointer.held.includes(action)) actions.setHeld(action, pointer.source, true);
+      }
+      pointer.held = next;
+      updateFeedback();
+    }
+
+    function aim(event, pointer) {
+      const rect = pad.getBoundingClientRect();
+      const x = (event.clientX - rect.left) / rect.width - 0.5;
+      const y = (event.clientY - rect.top) / rect.height - 0.5;
+      const next = [];
+      if (Math.hypot(x, y) >= 0.13) {
+        const diagonal = Math.SQRT2 - 1; // tan(22.5°), the edge of each 45° sector
+        if (Math.abs(x) > Math.abs(y) * diagonal) next.push(x < 0 ? 'moveLeft' : 'moveRight');
+        if (Math.abs(y) > Math.abs(x) * diagonal) next.push(y < 0 ? 'moveUp' : 'moveDown');
+      }
+      setHeld(pointer, next);
+    }
+
+    function onDown(event) {
+      const control = event.currentTarget;
+      if (event.button !== 0 || pointers.has(event.pointerId)
+        || getContext() !== (control === start ? 'overlay' : 'play')) return;
+      event.preventDefault();
+      control.setPointerCapture(event.pointerId);
+      const pointer = { control, source: Symbol(), held: [] };
+      pointers.set(event.pointerId, pointer);
+      if (control === pad) aim(event, pointer);
+      if (control === fire) setHeld(pointer, ['fire']);
+    }
+
+    function onMove(event) {
+      const pointer = pointers.get(event.pointerId);
+      if (pointer?.control === pad && event.currentTarget === pad && getContext() === 'play') aim(event, pointer);
+    }
+
+    function release(id) {
+      const pointer = pointers.get(id);
+      if (!pointer) return;
+      pointers.delete(id);
+      setHeld(pointer, []);
+      if (pointer.control.hasPointerCapture(id)) pointer.control.releasePointerCapture(id);
+    }
+
+    function onEnd(event) {
+      const pointer = pointers.get(event.pointerId);
+      if (pointer?.control !== event.currentTarget) return;
+      release(event.pointerId);
+      if (pointer.control === start && event.type === 'pointerup' && getContext() === 'overlay') {
+        const { left, right, top, bottom } = start.getBoundingClientRect();
+        if (event.clientX >= left && event.clientX <= right && event.clientY >= top && event.clientY <= bottom) {
+          actions.requestStart();
+        }
+      }
+    }
+
+    function onStartClick(event) {
+      // Pointer activations require a tracked press; keep native keyboard/AT activation.
+      if (event.detail === 0 && getContext() === 'overlay') actions.requestStart();
+    }
+
+    const unsubscribe = actions.onClear(() => {
+      for (const id of pointers.keys()) release(id);
+    });
+    const listeners = [
+      ['pointerdown', onDown], ['pointermove', onMove], ['pointerup', onEnd],
+      ['pointercancel', onEnd], ['lostpointercapture', onEnd],
+    ];
+    for (const control of controls) {
+      for (const [type, listener] of listeners) control.addEventListener(type, listener);
+    }
+    start.addEventListener('click', onStartClick);
+    playfield.setAttribute('data-touch-ready', '');
+
+    return {
+      setOverlay(label) {
+        start.hidden = !label;
+        fire.hidden = Boolean(label);
+        if (label) start.textContent = label;
+        pad.setAttribute('aria-disabled', String(Boolean(label)));
+      },
+      destroy() {
+        unsubscribe();
+        for (const id of pointers.keys()) release(id);
+        for (const control of controls) {
+          for (const [type, listener] of listeners) control.removeEventListener(type, listener);
+        }
+        start.removeEventListener('click', onStartClick);
+        playfield.removeAttribute('data-touch-ready');
+      },
+    };
+  }
+
+  return { createActionState, attachKeyboard, attachTouch, isInteractiveEvent, hasModifiers };
 })();

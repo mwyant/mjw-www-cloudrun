@@ -9,16 +9,32 @@ const js = join(__dirname, '../public/void-lancer/js');
 
 function runtime() {
   class Target extends EventTarget {
+    captured = new Set();
+    attributes = new Map();
+    dataset = {};
+
     send(type, props) {
       const event = Object.assign(new Event(type, { cancelable: true }), props);
       this.dispatchEvent(event);
       return event.defaultPrevented;
     }
+
+    setPointerCapture(id) { this.captured.add(id); }
+    hasPointerCapture(id) { return this.captured.has(id); }
+    releasePointerCapture(id) { this.captured.delete(id); }
+    getBoundingClientRect() { return { left: 0, right: 100, top: 0, bottom: 100, width: 100, height: 100 }; }
+    setAttribute(name, value) { this.attributes.set(name, value); }
+    removeAttribute(name) { this.attributes.delete(name); }
+    toggleAttribute(name, force) { force ? this.setAttribute(name, '') : this.removeAttribute(name); }
   }
+  const playfield = new Target();
+  const [pad, fire, start] = [new Target(), new Target(), new Target()];
+  const elements = { '#touchPad': pad, '#touchFire': fire, '#touchStart': start };
+  playfield.querySelector = (selector) => elements[selector];
   const window = new Target();
   const document = Object.assign(new Target(), {
     hidden: false,
-    getElementById: () => new Target(),
+    getElementById: (id) => id === 'playfield' ? playfield : new Target(),
   });
   let Scene;
   const vm = {
@@ -37,12 +53,20 @@ function runtime() {
   scene.events = new EventEmitter();
   scene.state = { mode: 'intro', score: 0 };
   let starts = 0;
-  scene.startGame = () => { starts++; scene.state.mode = 'playing'; };
-  scene.showOverlay = () => {};
+  scene.startGame = () => {
+    scene.actionState.clear();
+    starts++;
+    scene.state.mode = 'playing';
+    scene.touchControls.setOverlay(null);
+  };
+  scene.showOverlay = (_title, _summary, _detail, label) => scene.touchControls.setOverlay(label);
   scene.setupInput();
+  scene.showIntro();
   const key = (type, code, props) => document.send(type, { code, ...props });
   return {
-    window, document, scene, api: window.voidLancerControls,
+    window, document, scene, api: window.voidLancerControls, playfield, pad, fire, start,
+    pointer: (target, type, pointerId, clientX = 50, clientY = 50) =>
+      target.send(type, { pointerId, clientX, clientY, button: 0, pointerType: 'touch' }),
     starts: () => starts,
     down: (code, props) => key('keydown', code, props),
     up: (code, props) => key('keyup', code, props),
@@ -214,4 +238,93 @@ test('the action state accepts independent sources without knowing their device'
   assert.equal(held('fire'), true);
   state.clear();
   assert.equal(held('fire'), false);
+});
+
+test('pad diagonals, sliding and hold-to-fire compose across pointers and keyboard sources', () => {
+  const r = runtime();
+  const { pointer, pad, fire, held } = r;
+  r.down('Space');
+  r.up('Space');
+  assert.equal(pointer(pad, 'pointerdown', 1, 95, 5), true);
+  assert.equal(pointer(fire, 'pointerdown', 2), true);
+  assert.ok(held('moveUp') && held('moveRight') && held('fire'));
+  assert.ok(pad.hasPointerCapture(1) && fire.hasPointerCapture(2));
+  r.down('ArrowRight');
+  pointer(pad, 'pointermove', 1, -10, 150);
+  assert.equal(held('moveUp'), false);
+  assert.ok(held('moveDown') && held('moveLeft') && held('moveRight') && held('fire'));
+  pointer(pad, 'pointermove', 1);
+  assert.equal(held('moveDown'), false);
+  assert.equal(held('moveLeft'), false);
+  r.up('ArrowRight');
+  assert.equal(held('moveRight'), false);
+  pointer(fire, 'pointerdown', 3);
+  pointer(fire, 'pointerup', 2);
+  assert.equal(held('fire'), true);
+  pointer(fire, 'lostpointercapture', 3);
+  assert.equal(held('fire'), false);
+  pointer(pad, 'pointermove', 1, 5, 5);
+  pointer(pad, 'pointercancel', 1);
+  assert.equal(held('moveUp'), false);
+  assert.equal(pad.hasPointerCapture(1), false);
+});
+
+test('blur, hidden, successful remap, reset and teardown clear captured pointers without replay', () => {
+  const r = runtime();
+  const { pointer, pad, fire, held, api, scene } = r;
+  r.down('Space');
+  r.up('Space');
+  for (const clear of [
+    () => r.window.send('blur'),
+    () => { r.document.hidden = true; r.document.send('visibilitychange'); r.document.hidden = false; },
+    () => assert.equal(api.replace(api.getSnapshot()).valid, true),
+    () => api.reset(),
+    () => scene.events.emit('shutdown'),
+  ]) {
+    pointer(pad, 'pointerdown', 1, 95, 5);
+    pointer(fire, 'pointerdown', 2);
+    assert.equal(api.replace({}).valid, false);
+    assert.ok(held('moveUp') && held('fire'));
+    clear();
+    assert.equal(held('moveUp'), false);
+    assert.equal(held('fire'), false);
+    assert.equal(pad.hasPointerCapture(1) || fire.hasPointerCapture(2), false);
+    pointer(pad, 'pointermove', 1, 95, 5);
+    pointer(fire, 'pointerup', 2);
+    assert.equal(held('moveUp') || held('fire'), false);
+  }
+  assert.equal(r.playfield.attributes.has('data-touch-ready'), false);
+  assert.equal(pointer(fire, 'pointerdown', 4), false);
+});
+
+test('Start/Restart require fresh activation and never replay a held fire or pad pointer', () => {
+  const r = runtime();
+  const { pointer, pad, fire, start, held, scene } = r;
+  assert.equal(start.textContent, 'Start Sortie');
+  assert.equal(fire.hidden, true);
+  pointer(start, 'pointerdown', 1);
+  pointer(start, 'pointerup', 1, 200, 50);
+  assert.equal(r.starts(), 0, 'releasing outside the button does not start');
+  pointer(start, 'pointerdown', 2);
+  r.window.send('blur');
+  pointer(start, 'pointerup', 2);
+  start.send('click', { detail: 1 });
+  assert.equal(r.starts(), 0, 'a canceled press does not start on release or click');
+  pointer(start, 'pointerdown', 3);
+  pointer(start, 'pointerup', 3);
+  assert.equal(r.starts(), 1);
+  assert.equal(start.hidden, true);
+  assert.equal(fire.hidden, false);
+  pointer(pad, 'pointerdown', 4, 10, 50);
+  pointer(fire, 'pointerdown', 5);
+  assert.ok(held('moveLeft') && held('fire'));
+  scene.finishGame(false);
+  assert.equal(start.textContent, 'Restart Mission');
+  assert.equal(held('moveLeft') || held('fire'), false);
+  pointer(fire, 'pointerup', 5);
+  assert.equal(r.starts(), 1);
+  start.send('click', { detail: 0 }); // keyboard or assistive technology
+  assert.equal(r.starts(), 2);
+  pointer(pad, 'pointermove', 4, 10, 50);
+  assert.equal(held('moveLeft') || held('fire'), false);
 });

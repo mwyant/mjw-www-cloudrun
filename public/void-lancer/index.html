@@ -277,6 +277,96 @@
       text-decoration: underline;
     }
 
+    /* Optional pilot setup (kept between the playfield and the footer) */
+    .pilot-setup {
+      margin-top: 16px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      background: var(--clr-arcade-panel);
+      color: #fff;
+      font-family: var(--font-body);
+    }
+
+    .pilot-setup-summary {
+      cursor: pointer;
+      padding: 6px 10px;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--clr-cerulean);
+    }
+
+    .pilot-setup-summary:focus-visible {
+      outline: 2px solid var(--clr-cerulean);
+      outline-offset: -2px;
+      border-radius: 4px;
+    }
+
+    .pilot-setup-hint {
+      margin-left: 8px;
+      font-size: 0.65rem;
+      color: rgba(255,255,255,0.4);
+    }
+
+    .pilot-setup-body {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 0 10px 10px;
+    }
+
+    .pilot-setup-note {
+      margin: 0;
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.55);
+    }
+
+    .pilot-setup-fields {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+    }
+
+    .pilot-field {
+      display: flex;
+      flex: 1 1 200px;
+      min-width: 0;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .pilot-field-label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #9fb2cc;
+    }
+
+    .pilot-control {
+      box-sizing: border-box;
+      width: 100%;
+      min-width: 0;
+      padding: 7px 8px;
+      border: 1px solid var(--clr-arcade-border);
+      border-radius: 4px;
+      background: #07111f;
+      color: #eef5ff;
+      font: inherit;
+      font-size: 0.85rem;
+      color-scheme: dark;
+    }
+
+    .pilot-control:focus-visible {
+      outline: 2px solid var(--clr-cerulean);
+      outline-offset: 1px;
+    }
+
+    .pilot-address {
+      margin: 0;
+      font-size: 0.8rem;
+      color: var(--clr-cerulean);
+    }
+
     /* Mobile adjustments */
     @media (max-width: 768px) {
       .arcade-machine {
@@ -300,6 +390,9 @@
         padding-bottom: 8px;
       }
       .arcade-footer {
+        margin-top: 8px;
+      }
+      .pilot-setup {
         margin-top: 8px;
       }
     }
@@ -362,6 +455,42 @@
       </div>
     </div>
 
+    <details class="pilot-setup" id="pilotSetup">
+      <summary class="pilot-setup-summary">Pilot Setup <span class="pilot-setup-hint">Optional</span></summary>
+      <div class="pilot-setup-body">
+        <p class="pilot-setup-note">Optional. Nothing is saved or sent, and no name is needed to launch.</p>
+        <div class="pilot-setup-fields">
+          <label class="pilot-field">
+            <span class="pilot-field-label">Rank</span>
+            <select class="pilot-control" id="pilotRank">
+              <option value="">No rank selected</option>
+              <optgroup label="US Navy">
+                <option value="navy-ensign">Ensign</option>
+                <option value="navy-lieutenant-junior-grade">Lieutenant Junior Grade</option>
+                <option value="navy-lieutenant">Lieutenant</option>
+                <option value="navy-lieutenant-commander">Lieutenant Commander</option>
+                <option value="navy-commander">Commander</option>
+                <option value="navy-captain">Captain</option>
+              </optgroup>
+              <optgroup label="US Space Force">
+                <option value="space-force-second-lieutenant">Second Lieutenant</option>
+                <option value="space-force-first-lieutenant">First Lieutenant</option>
+                <option value="space-force-captain">Captain</option>
+                <option value="space-force-major">Major</option>
+                <option value="space-force-lieutenant-colonel">Lieutenant Colonel</option>
+                <option value="space-force-colonel">Colonel</option>
+              </optgroup>
+            </select>
+          </label>
+          <label class="pilot-field">
+            <span class="pilot-field-label">Surname</span>
+            <input class="pilot-control" type="text" id="pilotSurname" autocomplete="family-name" maxlength="40" spellcheck="false">
+          </label>
+        </div>
+        <p class="pilot-address" id="pilotAddress" aria-live="polite">Standing by, Pilot.</p>
+      </div>
+    </details>
+
     <div class="arcade-footer">
       <div>Default controls: WASD/Arrows to Move • Space/J/K to Fire or Start</div>
       <a href="/" class="back-link">← Return to Station</a>
@@ -373,5 +502,6 @@
   <script src="./js/level1_stage_data.js"></script>
   <script src="./js/controls.js?v=2"></script>
   <script src="./js/main.js?v=6"></script>
+  <script src="./js/pilot-setup.js?v=1"></script>
 </body>
 </html>

@@ -4,13 +4,17 @@ const DEPTH = {
   background: 0,
   backgroundFx: 10,
   atmosphereFar: 14,
+  graveyardScenery: 16,
   atmosphereMid: 18,
   foregroundProps: 20,
+  graveyardBeam: 22,
+  graveyardBoat: 24,
   player: 30,
   entities: 40,
   bullets: 50,
   particles: 60,
   hud: 70,
+  graveyardAlert: 74,
   overlay: 80,
   boss: 90,
 };
@@ -153,6 +157,7 @@ const FX_LIBRARY = {
 
 const DEFAULT_STAGE_DATA = { waveTimeline: [], backdropCues: [], environmentTimeline: [] };
 const LEVEL_1_STAGE_DATA = window.VoidLancerLevel1StageData || DEFAULT_STAGE_DATA;
+const LEVEL_2_STAGE_DATA = window.VoidLancerLevel2StageData || DEFAULT_STAGE_DATA;
 
 const STAGE_BACKGROUND_MODULE_LAYOUT = [
   { kind: 'towerCluster', x: GAME_WIDTH + 40, y: 96, speed: 13, scale: 1.0, alpha: 0.24, wobbleAmount: 1.0, wobbleSpeed: 0.58, recycleGap: 220 },
@@ -164,6 +169,20 @@ const STAGE_BACKGROUND_MODULE_LAYOUT = [
   { kind: 'craneArm', x: GAME_WIDTH + 1570, y: 450, speed: 10, scale: 0.9, alpha: 0.18, wobbleAmount: 1.4, wobbleSpeed: 0.72, recycleGap: 240 },
   { kind: 'deadPlatformSilhouette', x: GAME_WIDTH + 1840, y: 430, speed: 8, scale: 1.3, alpha: 0.2, wobbleAmount: 0.45, wobbleSpeed: 0.32, recycleGap: 260 },
 ];
+
+// Sortie 2 reuses the same scenery builders as the First Sortie, just slower,
+// sparser and dimmer so the lane stays quiet enough to learn the worklight.
+const GRAVEYARD_STAGE_MODULE_LAYOUT = [
+  { kind: 'deadPlatformSilhouette', x: GAME_WIDTH + 140, y: 116, speed: 7, scale: 1.36, alpha: 0.15, wobbleAmount: 0.35, wobbleSpeed: 0.3, recycleGap: 320 },
+  { kind: 'railSection', x: GAME_WIDTH + 520, y: 436, speed: 6, scale: 1.0, alpha: 0.12, wobbleAmount: 0.5, wobbleSpeed: 0.36, recycleGap: 300 },
+  { kind: 'towerCluster', x: GAME_WIDTH + 960, y: 92, speed: 6, scale: 1.12, alpha: 0.15, wobbleAmount: 0.8, wobbleSpeed: 0.42, recycleGap: 320 },
+  { kind: 'craneArm', x: GAME_WIDTH + 1440, y: 452, speed: 7, scale: 1.0, alpha: 0.13, wobbleAmount: 1.2, wobbleSpeed: 0.5, recycleGap: 300 },
+  { kind: 'machineryPass', x: GAME_WIDTH + 1900, y: 296, speed: 5, scale: 0.9, alpha: 0.11, wobbleAmount: 0.6, wobbleSpeed: 0.4, recycleGap: 280 },
+];
+
+// Warm work-light amber: kept separate from player cyan and enemy crimson so
+// the yard reads as civilian lighting rather than a hazard telegraph.
+const WORK_LIGHT_COLOR = 0xffd9a0;
 
 function lerp(a, b, t) {
   return a + (b - a) * t;
@@ -188,6 +207,11 @@ class MockupLevelScene extends Phaser.Scene {
     super('MockupLevel');
     this.assetManifest = null;
     this.levelStageData = LEVEL_1_STAGE_DATA;
+    // Resolved from ?sortie=2 when the scene boots; 1 is the First Sortie.
+    this.sortieIndex = 1;
+    this.carriedScore = 0;
+    this.graveyardObjects = [];
+    this.graveyardDebris = null;
     this.soundEnabled = true;
     this.soundToggleButton = null;
     this.audioContext = null;
@@ -246,6 +270,7 @@ class MockupLevelScene extends Phaser.Scene {
   }
 
   create() {
+    this.sortieIndex = VoidLancerGraveyard.readSortieIndex(window.location?.search);
     this.assetManifest = this.cache.json.get('runtimeAssetManifest') || DEFAULT_ASSET_MANIFEST;
 
     this.setupAudioControls();
@@ -264,7 +289,7 @@ class MockupLevelScene extends Phaser.Scene {
     this.levelStageData = this.getLevelStageData();
     this.state = {
       mode: 'intro',
-      score: 0,
+      score: this.carriedScore || 0,
       time: 0,
       fx: [],
       bullets: [],
@@ -291,7 +316,7 @@ class MockupLevelScene extends Phaser.Scene {
       }
     };
 
-    this.uiState.lastScore = 0;
+    this.uiState.lastScore = this.state.score;
     this.uiState.lastWeaponLevel = this.state.player.weaponLevel;
     this.uiState.lastAnnouncementKey = '';
     this.uiState.lastBossRatio = 1;
@@ -302,6 +327,7 @@ class MockupLevelScene extends Phaser.Scene {
       .setDepth(DEPTH.player);
 
     this.setupStageBackdropModules();
+    if (this.sortieIndex === 2) this.setupGraveyardSortie();
 
     this.syncHud();
     this.hideBossBar();
@@ -309,7 +335,7 @@ class MockupLevelScene extends Phaser.Scene {
   }
 
   getLevelStageData() {
-    return window.VoidLancerLevel1StageData || LEVEL_1_STAGE_DATA;
+    return this.sortieIndex === 2 ? LEVEL_2_STAGE_DATA : LEVEL_1_STAGE_DATA;
   }
 
   setupAudioControls() {
@@ -504,6 +530,7 @@ class MockupLevelScene extends Phaser.Scene {
 
   destroyDynamicObjects() {
     this.destroyStageBackdropModules();
+    this.destroyGraveyardObjects();
     const pools = ['bullets', 'enemies', 'powerUps', 'fx', 'environmentPanels'];
     if (this.state) {
       for (const pool of pools) {
@@ -517,41 +544,113 @@ class MockupLevelScene extends Phaser.Scene {
     if (this.playerSprite) this.playerSprite.destroy();
   }
 
+  sortieBriefing() {
+    if (this.sortieIndex === 2) {
+      return {
+        title: 'Graveyard Lane',
+        summary: "The Carrier's route ends in the Palace-ship graveyard. Cross the yard and keep clear of the mercenary worklight: hold contact and the Imperial patrol wakes up.",
+        detail: 'Touch: use the pad and hold Fire. Keyboard: WASD / arrows, Space / J / K.',
+        button: 'Start Sortie',
+        tag: 'Mission Briefing',
+        accent: COLORS.cyan,
+        subtitle: 'VOID LANCER // GRAVEYARD SORTIE',
+      };
+    }
+    return {
+      title: 'Launch Window Open',
+      summary: 'Escort corridor zero is hot. Survive the opening waves, grab the pulse upgrade, and break the siege carrier at the end of the lane.',
+      detail: 'Touch: use the pad and hold Fire. Keyboard: WASD / arrows, Space / J / K.',
+      button: 'Start Sortie',
+      tag: 'Mission Briefing',
+      accent: COLORS.cyan,
+      subtitle: 'VOID LANCER // FIRST SORTIE',
+    };
+  }
+
   showIntro() {
     this.state.mode = 'intro';
-    this.showOverlay(
-      'Launch Window Open',
-      'Escort corridor zero is hot. Survive the opening waves, grab the pulse upgrade, and break the siege carrier at the end of the lane.',
-      'Touch: use the pad and hold Fire. Keyboard: WASD / arrows, Space / J / K.',
-      'Start Sortie',
-      { tag: 'Mission Briefing', accent: COLORS.cyan, subtitle: 'VOID LANCER // FIRST SORTIE' }
-    );
+    const brief = this.sortieBriefing();
+    this.showOverlay(brief.title, brief.summary, brief.detail, brief.button, brief);
   }
 
   startGame() {
     this.actionState.clear();
     this.startMusicPlayback();
+    if (this.state?.mode === 'victory') {
+      // A cleared sortie never starts the next one by itself: the overlay
+      // offers the next lane (or a full replay) and its briefing follows.
+      this.enterSortie(this.sortieIndex === 2 ? 1 : 2);
+      return;
+    }
+    this.beginSortie();
+  }
+
+  beginSortie() {
     this.resetGame();
     this.state.mode = 'playing';
     this.hideOverlay();
   }
 
+  enterSortie(index) {
+    const next = index === 2 ? 2 : 1;
+    // Score carries across a run; replaying the pair starts the run over.
+    this.carriedScore = next === 2 ? (this.state?.score || 0) : 0;
+    this.sortieIndex = next;
+    this.resetGame();
+    this.showIntro();
+  }
+
+  sortieEndCopy(victory) {
+    const score = `Score: ${this.state.score}`;
+    if (victory && this.sortieIndex === 2) {
+      return {
+        title: 'Run Complete',
+        summary: 'Carrier down, graveyard crossed. The route record and the marker trail point past this yard, and the run is yours to repeat.',
+        detail: score,
+        button: 'Replay Both Sorties',
+        tag: 'Two Sorties Clear',
+        accent: COLORS.gold,
+        subtitle: 'First Sortie and Graveyard secured',
+      };
+    }
+    if (victory) {
+      return {
+        title: 'Sortie Complete',
+        summary: 'The siege carrier is burning out behind you. First lane secured.',
+        detail: score,
+        button: 'Continue to Graveyard',
+        tag: 'Mission Clear',
+        accent: COLORS.gold,
+        subtitle: 'Carrier neutralized',
+      };
+    }
+    if (this.sortieIndex === 2) {
+      return {
+        title: 'Mission Failed',
+        summary: 'Hull lost in the graveyard lane. The route record stays open for another run.',
+        detail: score,
+        button: 'Retry Graveyard',
+        tag: 'Mission Failed',
+        accent: COLORS.red,
+        subtitle: 'Graveyard lane still hostile',
+      };
+    }
+    return {
+      title: 'Mission Failed',
+      summary: 'The corridor chewed you up. The lane is still hostile.',
+      detail: score,
+      button: 'Restart Mission',
+      tag: 'Mission Failed',
+      accent: COLORS.red,
+      subtitle: 'Try a cleaner run',
+    };
+  }
+
   finishGame(victory) {
     this.state.mode = victory ? 'victory' : 'gameover';
     this.actionState.clear();
-    this.showOverlay(
-      victory ? 'Sortie Complete' : 'Mission Failed',
-      victory
-        ? 'The siege carrier is burning out behind you. First lane secured.'
-        : 'The corridor chewed you up. The lane is still hostile.',
-      `Score: ${this.state.score}`,
-      'Restart Mission',
-      {
-        tag: victory ? 'Mission Clear' : 'Mission Failed',
-        accent: victory ? COLORS.gold : COLORS.red,
-        subtitle: victory ? 'Carrier neutralized' : 'Try a cleaner run',
-      }
-    );
+    const end = this.sortieEndCopy(victory);
+    this.showOverlay(end.title, end.summary, end.detail, end.button, end);
   }
 
   showOverlay(title, summary, detail, buttonLabel, options = {}) {
@@ -610,6 +709,216 @@ class MockupLevelScene extends Phaser.Scene {
     this.touchControls?.setOverlay(null);
   }
 
+  // --- Graveyard Sortie (sortie 2) ---------------------------------------
+
+  setupGraveyardSortie() {
+    if (!SOUND_LIBRARY.graveyardSiren) {
+      // Derived from the existing bossWarning preset: same layers, swept up.
+      SOUND_LIBRARY.graveyardSiren = VoidLancerGraveyard.sirenPreset(SOUND_LIBRARY.bossWarning);
+    }
+
+    const detection = VoidLancerGraveyard.createDetection();
+    const salvager = {
+      x: 1040,
+      baseY: 300,
+      speed: 26,
+      bobSpeed: 0.6,
+      bobAmount: 20,
+      phase: 0.8,
+      lampOffsetX: 20,
+      lampOffsetY: -36,
+    };
+    detection.originX = salvager.x + salvager.lampOffsetX;
+    detection.originY = salvager.baseY + salvager.lampOffsetY;
+
+    this.graveyardObjects = [];
+    this.graveyardDebris = this.add.tileSprite(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 'bgDebrisStrip')
+      .setAlpha(0.24)
+      .setDepth(DEPTH.graveyardScenery);
+    this.graveyardObjects.push(this.graveyardDebris);
+
+    salvager.container = this.buildSalvagerBoat(salvager);
+    this.graveyardObjects.push(salvager.container);
+
+    const beam = this.buildWorklightBeam();
+    this.graveyardObjects.push(beam);
+
+    const alertText = this.add.text(GAME_WIDTH / 2, 502, '', {
+      fontFamily: 'Arial',
+      fontSize: '23px',
+      color: '#ffe7c4',
+      fontStyle: 'bold',
+      letterSpacing: 1,
+    }).setOrigin(0.5).setVisible(false).setDepth(DEPTH.graveyardAlert);
+    alertText.setStroke('#160c05', 4);
+    const alertChevron = this.add.triangle(GAME_WIDTH / 2, 476, 0, 0, 16, 0, 8, 13, 0xffb45a)
+      .setVisible(false)
+      .setDepth(DEPTH.graveyardAlert);
+    this.graveyardObjects.push(alertText, alertChevron);
+
+    this.state.graveyard = { detection, salvager, beam, alertText, alertChevron };
+  }
+
+  // Procedural slate workboat: blunt nose and open jaw on the left, an open
+  // cargo gap through the middle, raised power block at the rear. Drawn from
+  // primitives only; no draft asset is added to public/.
+  buildSalvagerBoat(salvager) {
+    const container = this.add.container(salvager.x, salvager.baseY).setDepth(DEPTH.graveyardBoat);
+    const hull = 0x4a5666;
+    const hullDark = 0x2c3542;
+    const hullLight = 0x5d6a7b;
+
+    const parts = [
+      // Blunt prow with an open grappler jaw (the single hot point).
+      this.add.rectangle(-32, 1, 26, 26, hull),
+      this.add.rectangle(-32, 13, 26, 6, hullDark),
+      this.add.rectangle(-22, -9, 7, 9, hullLight),
+      this.add.rectangle(-47, -6, 9, 5, 0x8a97a8),
+      this.add.rectangle(-47, 5, 9, 5, 0x8a97a8),
+      this.add.rectangle(-51, -1, 6, 3, 0xfff2dc, 0.95),
+      // Cargo gap: rails top and bottom, dark open bay between them.
+      this.add.rectangle(-6, -12, 28, 5, 0x3b4553),
+      this.add.rectangle(-6, 12, 28, 5, 0x333d4a),
+      this.add.rectangle(-6, 0, 26, 16, 0x111821, 0.95),
+      this.add.rectangle(-16, 0, 3, 16, 0x525e6e),
+      this.add.rectangle(-4, 0, 3, 16, 0x525e6e),
+      this.add.rectangle(6, 0, 3, 16, 0x525e6e),
+      this.add.rectangle(-9, 6, 14, 3, 0x5c6878, 0.9),
+      this.add.circle(1, 7, 4, 0x66717f, 0.9),
+      // Raised rear: hull block, superstructure, mast, engine stub.
+      this.add.rectangle(26, 4, 34, 20, 0x445061),
+      this.add.rectangle(30, -14, 22, 16, 0x4e5a6b),
+      this.add.rectangle(30, -18, 18, 3, 0x2b3440),
+      this.add.rectangle(44, 2, 6, 12, 0x323c49),
+      this.add.rectangle(20, -28, 3, 14, 0x39434f),
+    ];
+
+    const lampGlow = this.add.circle(salvager.lampOffsetX, salvager.lampOffsetY, 16, WORK_LIGHT_COLOR, 0.12)
+      .setBlendMode(Phaser.BlendModes.ADD);
+    const lampPool = this.add.ellipse(salvager.lampOffsetX, salvager.lampOffsetY, 54, 34, WORK_LIGHT_COLOR, 0.16)
+      .setBlendMode(Phaser.BlendModes.ADD);
+    const lampLens = this.add.circle(salvager.lampOffsetX, salvager.lampOffsetY, 5, 0xfff1dc, 0.95);
+    parts.push(lampGlow, lampPool, lampLens);
+
+    container.add(parts);
+    salvager.lampPool = lampPool;
+    return container;
+  }
+
+  // The cone is rebuilt from the detection triangle in world space each frame,
+  // so the drawn sight line and inBeam() cannot drift apart.
+  buildWorklightBeam() {
+    const beam = this.add.graphics();
+    beam.setBlendMode(Phaser.BlendModes.ADD);
+    beam.setDepth(DEPTH.graveyardBeam);
+    return beam;
+  }
+
+  renderWorklightBeam(beam, detection) {
+    const cone = VoidLancerGraveyard.beamLocalTriangle(detection);
+    const cos = Math.cos(detection.angle);
+    const sin = Math.sin(detection.angle);
+    const layer = (scale) => cone.map((point) => {
+      const localX = point.x * scale;
+      const localY = point.y * scale;
+      return {
+        x: detection.originX + localX * cos - localY * sin,
+        y: detection.originY + localX * sin + localY * cos,
+      };
+    });
+
+    beam.clear();
+    beam.fillStyle(WORK_LIGHT_COLOR, 0.07);
+    beam.fillPoints(layer(1), true);
+    beam.fillStyle(WORK_LIGHT_COLOR, 0.09);
+    beam.fillPoints(layer(0.72), true);
+    beam.fillStyle(WORK_LIGHT_COLOR, 0.1);
+    beam.fillPoints(layer(0.42), true);
+  }
+
+  destroyGraveyardObjects() {
+    for (const object of this.graveyardObjects || []) {
+      if (object && typeof object.destroy === 'function') object.destroy();
+    }
+    this.graveyardObjects = [];
+    this.graveyardDebris = null;
+    if (this.state) this.state.graveyard = null;
+  }
+
+  updateGraveyard(dt) {
+    const yard = this.state.graveyard;
+    if (!yard) return;
+    const salvager = yard.salvager;
+
+    salvager.x -= salvager.speed * dt;
+    salvager.y = salvager.baseY + Math.sin(this.state.time * salvager.bobSpeed + salvager.phase) * salvager.bobAmount;
+    if (salvager.container) {
+      salvager.container.x = salvager.x;
+      salvager.container.y = salvager.y;
+      salvager.container.rotation = Math.sin(this.state.time * 0.7 + salvager.phase) * 0.02;
+    }
+    if (this.graveyardDebris) this.graveyardDebris.tilePositionX += 16 * dt;
+
+    const detection = yard.detection;
+    detection.originX = salvager.x + salvager.lampOffsetX;
+    detection.originY = salvager.y + salvager.lampOffsetY;
+
+    const events = VoidLancerGraveyard.updateDetection(detection, dt, this.state.player);
+    if (events.alarm) this.triggerGraveyardAlarm();
+
+    this.renderGraveyard(detection, yard);
+  }
+
+  renderGraveyard(detection, yard) {
+    const salvager = yard.salvager;
+    if (yard.beam) {
+      this.renderWorklightBeam(yard.beam, detection);
+      // Brighter while the lock is held: the freeze plus this step is the cue.
+      yard.beam.setAlpha(detection.alarm ? 1 : detection.contact ? 0.92 : 0.75);
+    }
+    if (salvager.lampPool) {
+      const pulse = 0.14 + Math.sin(this.state.time * 3.2) * 0.03;
+      salvager.lampPool.setAlpha(detection.contact ? pulse + 0.12 : pulse);
+    }
+    this.updateGraveyardAlert(detection, yard);
+  }
+
+  // Text and chevron carry the alert, so it never reads by colour alone.
+  updateGraveyardAlert(detection, yard) {
+    const label = detection.alarm
+      ? 'ALARM // IMPERIAL PATROL ALERTED'
+      : detection.contact
+        ? (detection.graceExpired ? 'CONTACT // STAND BY' : 'CONTACT // BREAK OFF')
+        : '';
+    const visible = label !== '';
+    if (yard.alertText.visible !== visible) {
+      yard.alertText.setVisible(visible);
+      yard.alertChevron.setVisible(visible);
+    }
+    if (!visible) {
+      yard.alertLabel = '';
+      return;
+    }
+    if (yard.alertLabel !== label) {
+      yard.alertLabel = label;
+      yard.alertText.setText(label);
+    }
+    const flash = 0.72 + Math.sin(this.state.time * (detection.alarm ? 16 : 9)) * 0.28;
+    yard.alertText.setAlpha(flash);
+    yard.alertChevron.setAlpha(flash);
+    yard.alertChevron.setScale(detection.alarm ? 1 + Math.sin(this.state.time * 16) * 0.12 : 1);
+  }
+
+  triggerGraveyardAlarm() {
+    if (!this.state.graveyard) return;
+    // One siren and one banner. The tagged patrol already on station starts
+    // firing through its own alarm check; nothing is spawned from here.
+    this.playSound('graveyardSiren');
+    this.state.announcements.push({ text: 'WORKLIGHT ALARM // IMPERIAL PATROL ALERTED', ttl: 2.6, kind: 'warning' });
+    this.updateAnnouncementDisplay();
+  }
+
+
   buildWavePlan() {
     return (this.levelStageData?.waveTimeline || []).map((event) => ({
       time: event.time,
@@ -658,6 +967,10 @@ class MockupLevelScene extends Phaser.Scene {
         this.state.announcements.push({ text: action.announcement, ttl: action.ttl, kind: action.kind });
         this.updateAnnouncementDisplay();
         break;
+      case 'announce':
+        this.state.announcements.push({ text: action.text, ttl: action.ttl ?? 2.4, kind: action.kind ?? 'notice' });
+        this.updateAnnouncementDisplay();
+        break;
       default:
         break;
     }
@@ -689,6 +1002,8 @@ class MockupLevelScene extends Phaser.Scene {
       speed: options.speed ?? (type === 'turret' ? 92 : type === 'drone' ? 230 : 170),
       phase: options.phase ?? Phaser.Math.FloatBetween(0, Math.PI * 2),
       fireCooldown: options.fireCooldown ?? (type === 'turret' ? Phaser.Math.FloatBetween(0.5, 1.2) : 0),
+      // A tagged patrol stays on station and silent until the worklight alarm.
+      patrolTag: options.patrolTag || null,
       life: 0,
       radius: options.radius ?? manifest.collisionRadius,
       hp: baseHp,
@@ -990,9 +1305,14 @@ class MockupLevelScene extends Phaser.Scene {
     this.livesText.setText(this.state.player.lives.toString().padStart(2, '0'));
     this.weaponText.setText(this.state.player.weaponLevel > 1 ? 'PULSE+' : 'PULSE');
     this.weaponTag.setText(this.state.player.weaponLevel > 1 ? 'MK II' : 'MK I');
-    this.stageText.setText('01 / 01');
-    this.stageTag.setText(this.state.boss ? 'BOSS LANE' : this.state.bossQueued ? 'SIGNAL LOCKED' : 'OPENING LANE');
-    this.stageTag.setColor(this.state.boss || this.state.bossQueued ? '#ffd65a' : '#8ea6cd');
+    this.stageText.setText(this.sortieIndex === 2 ? '02 / 02' : '01 / 02');
+    if (this.sortieIndex === 2) {
+      this.stageTag.setText('GRAVEYARD LANE');
+      this.stageTag.setColor('#8ea6cd');
+    } else {
+      this.stageTag.setText(this.state.boss ? 'BOSS LANE' : this.state.bossQueued ? 'SIGNAL LOCKED' : 'OPENING LANE');
+      this.stageTag.setColor(this.state.boss || this.state.bossQueued ? '#ffd65a' : '#8ea6cd');
+    }
 
     this.livesPips.getChildren().forEach((pip, index) => {
       pip.setAlpha(index < this.state.player.lives ? 0.96 : 0.2);
@@ -1250,6 +1570,13 @@ class MockupLevelScene extends Phaser.Scene {
     this.updateCollisions();
     this.updateFx(dt);
     this.updateAnnouncements(dt);
+    // updateBullets/updateCollisions can end the run inside this same frame, so
+    // the worklight read and the timed clear only run while the lane is live.
+    if (this.sortieIndex === 2 && this.state.mode === 'playing') {
+      this.updateGraveyard(dt);
+      const duration = this.levelStageData?.missionDuration;
+      if (duration && this.state.time >= duration) this.finishGame(true);
+    }
     this.renderState();
   }
 
@@ -1320,13 +1647,20 @@ class MockupLevelScene extends Phaser.Scene {
       } else if (enemy.type === 'turret') {
         enemy.x -= enemy.speed * dt;
         enemy.y += Math.sin(enemy.life * 2.4 + enemy.phase) * 40 * dt;
-        enemy.fireCooldown -= dt;
-        if (enemy.fireCooldown <= 0) {
-          enemy.fireCooldown = 1.4;
-          const dy = this.state.player.y - enemy.y;
-          const aim = this.clamp(dy * 1.2, -180, 180);
-          this.spawnBullet('enemy', enemy.x - enemy.radius, enemy.y, -280, aim, 5, 1);
-          this.playSound('enemyFire', { volume: enemy.type === 'turret' ? 0.14 : 0.12, detune: enemy.type === 'turret' ? 0 : -20 });
+        const onStation = Boolean(enemy.patrolTag);
+        const alarmed = !onStation || Boolean(this.state.graveyard?.detection?.alarm);
+        if (!alarmed) {
+          // Tagged patrol: silent and held ready on station until the alarm lands.
+          enemy.fireCooldown = 0.45;
+        } else {
+          enemy.fireCooldown -= dt * (onStation ? 1.6 : 1);
+          if (enemy.fireCooldown <= 0) {
+            enemy.fireCooldown = 1.4;
+            const dy = this.state.player.y - enemy.y;
+            const aim = this.clamp(dy * 1.2, -180, 180);
+            this.spawnBullet('enemy', enemy.x - enemy.radius, enemy.y, -280, aim, 5, 1);
+            this.playSound('enemyFire', { volume: enemy.type === 'turret' ? 0.14 : 0.12, detune: enemy.type === 'turret' ? 0 : -20 });
+          }
         }
       } else if (enemy.type === 'drone') {
         enemy.x -= enemy.speed * dt;
@@ -1754,7 +2088,7 @@ class MockupLevelScene extends Phaser.Scene {
       .setBlendMode(Phaser.BlendModes.ADD);
 
     this.stageLabel = this.add.text(606, 17, 'STAGE', hudLabelStyle).setDepth(DEPTH.hud + 2);
-    this.stageText = this.add.text(606, 34, '01 / 01', { fontFamily: 'Arial', fontSize: '24px', color: '#eef5ff', fontStyle: 'bold' }).setDepth(DEPTH.hud + 2);
+    this.stageText = this.add.text(606, 34, '01 / 02', { fontFamily: 'Arial', fontSize: '24px', color: '#eef5ff', fontStyle: 'bold' }).setDepth(DEPTH.hud + 2);
     this.stageTag = this.add.text(718, 34, 'OPENING LANE', { fontFamily: 'Arial', fontSize: '14px', color: '#8ea6cd', fontStyle: 'bold' }).setDepth(DEPTH.hud + 2);
 
     this.bossBarFrame = this.add.image(780, 104, 'bossBarFrame').setDisplaySize(304, 58).setVisible(false).setDepth(DEPTH.hud + 2);
@@ -1782,7 +2116,7 @@ class MockupLevelScene extends Phaser.Scene {
       fontSize: '16px',
       color: '#eef5ff',
       fontStyle: 'bold',
-      letterSpacing: '0.5px',
+      letterSpacing: 0.5,
     }).setOrigin(0.5).setVisible(false).setDepth(DEPTH.hud + 3);
     this.announcementText.setStroke('#04101a', 4);
     this.announcementText.setShadow(0, 0, '#000000', 8, true, true);
@@ -1790,7 +2124,7 @@ class MockupLevelScene extends Phaser.Scene {
       fontFamily: 'Arial',
       fontSize: '11px',
       color: '#8ea6cd',
-      letterSpacing: '1.2px',
+      letterSpacing: 1.2,
     }).setOrigin(0.5).setVisible(false).setDepth(DEPTH.hud + 3);
     this.announcementSubtext.setStroke('#04101a', 3);
     this.announcementSubtext.setShadow(0, 0, '#000000', 6, true, true);
@@ -2224,7 +2558,8 @@ class MockupLevelScene extends Phaser.Scene {
       triggered: false,
     }));
 
-    for (const def of STAGE_BACKGROUND_MODULE_LAYOUT) {
+    const layout = this.sortieIndex === 2 ? GRAVEYARD_STAGE_MODULE_LAYOUT : STAGE_BACKGROUND_MODULE_LAYOUT;
+    for (const def of layout) {
       this.spawnStageBackdropModule(def.kind, def.x, def.y, def);
     }
   }

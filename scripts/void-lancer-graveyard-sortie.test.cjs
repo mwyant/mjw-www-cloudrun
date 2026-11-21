@@ -544,12 +544,11 @@ test('holding the worklight rings one siren, raises the banner and spawns nothin
   assert.equal(yard.alertChevron.visible, true, 'the alert carries a shape, not just a colour');
 });
 
-test('the salvager is drawn from primitives and never shoots', () => {
+test('the salvager uses a distinct workboat sprite and never shoots', () => {
   const r = graveyardScene();
   const yard = r.scene.state.graveyard;
   const kinds = yard.salvager.container.children.map((child) => child.kind);
-  assert.ok(kinds.length > 10, 'the silhouette is assembled from primitives');
-  assert.equal(kinds.includes('image'), false, 'no draft asset is used for the workboat');
+  assert.equal(kinds.filter((kind) => kind === 'image').length, 1, 'the workboat has one hull sprite');
   assert.equal(kinds.includes('graphics'), false, 'the beam is not part of the hull');
   for (const field of ['fireCooldown', 'hp', 'score', 'patrolTag']) {
     assert.equal(field in yard.salvager, false, `the workboat has no ${field}`);
@@ -561,6 +560,21 @@ test('the salvager is drawn from primitives and never shoots', () => {
   }
   assert.equal(r.shots.length, 0, 'updating the salvager produces no shots');
   assert.ok(yard.salvager.x < 1040, 'the workboat drifts through the yard');
+});
+
+test('the Graveyard backdrop pans without tiling and salvage tags are scenery', () => {
+  const r = graveyardScene();
+  const yard = r.scene.state.graveyard;
+  const initialX = yard.backdrop.x;
+  assert.equal(yard.backdrop.kind, 'image');
+  assert.ok(yard.markers.every((marker) => marker.x > 960));
+  r.scene.state.time = 16;
+  r.scene.updateGraveyard(0);
+  assert.ok(yard.backdrop.x < initialX && yard.backdrop.x >= 460);
+  assert.ok(yard.markers[0].x < 960);
+  assert.equal(r.scene.state.powerUps.length, 0);
+  r.scene.destroyGraveyardObjects();
+  assert.ok(yard.backdrop.destroyed && yard.markers.every((marker) => marker.destroyed));
 });
 
 test('the tagged patrol holds fire on station and fires faster once alarmed', () => {
@@ -692,4 +706,143 @@ test('the siren is the existing bossWarning preset with its frequencies swept up
   });
   assert.equal(siren.duration, base.duration);
   assert.equal(siren.volume, base.volume);
+});
+
+// --- Level 2 close, copy and clear ----------------------------------------
+
+function level2Lane() {
+  const r = runtime();
+  r.scene.sortieIndex = 2;
+  r.scene.levelStageData = r.scene.getLevelStageData();
+  return r;
+}
+
+// Every `announce` action in the lane, in timeline order.
+function level2Banners(data) {
+  const banners = [];
+  for (const wave of data.waveTimeline || []) {
+    for (const action of wave.actions || []) {
+      if (action.type === 'announce') {
+        banners.push({ time: wave.time, ttl: action.ttl ?? 2.4, kind: action.kind ?? 'notice', text: action.text });
+      }
+    }
+  }
+  return banners;
+}
+
+test('the Graveyard keeps its tested wave pacing and bounds the exit beat', () => {
+  const data = level2Lane().scene.levelStageData;
+
+  // Array.from keeps the result in this realm: arrays built inside the VM
+  // sandbox carry that realm's Array prototype and deepStrictEqual rejects them.
+  const spawnTimes = Array.from(
+    data.waveTimeline.filter((wave) => (wave.actions || []).some((action) => action.type === 'spawnEnemies')),
+    (wave) => wave.time,
+  );
+  assert.deepEqual(spawnTimes, [0, 3, 8.5, 12, 16, 21, 25.5],
+    'the early waves are untouched and 25.5s is still the last wave of the lane');
+
+  assert.equal(data.missionDuration, 30, 'the crossing stays a 30 second run');
+  const gap = data.missionDuration - spawnTimes[spawnTimes.length - 1];
+  assert.ok(gap >= 4, `the exit beat has ${gap}s to land once the last wave is in`);
+});
+
+test('each Graveyard banner is readable on the plate and lands alone', () => {
+  const data = level2Lane().scene.levelStageData;
+  const banners = level2Banners(data);
+
+  assert.deepEqual(banners.map((banner) => banner.time), [0.6, 5.5, 12, 25.5, 28]);
+  assert.deepEqual(banners.map((banner) => banner.kind), ['notice', 'notice', 'notice', 'warning', 'notice']);
+  for (let i = 1; i < banners.length; i += 1) {
+    const previous = banners[i - 1];
+    // The queue ticks every banner's ttl together, so overlapping entries
+    // would show the later one for only what is left of its life.
+    assert.ok(previous.time + previous.ttl <= banners[i].time,
+      `the ${previous.time}s banner clears before the ${banners[i].time}s one arrives`);
+  }
+
+  const last = banners[banners.length - 1];
+  assert.ok(last.time + last.ttl <= data.missionDuration, 'the payoff never outlives the run');
+  assert.ok(data.missionDuration - last.time >= 1.5, 'the payoff has time to read before the clear');
+
+  for (const banner of banners) {
+    assert.ok(banner.text.length > 0 && banner.text.length <= 44,
+      `"${banner.text}" is ${banner.text.length} characters on the announcement plate`);
+    assert.ok(banner.ttl > 0 && banner.ttl <= 3, `ttl ${banner.ttl}s at ${banner.time}s`);
+  }
+});
+
+test('the Level 2 copy names the objective, both parties and the Solar Altar without a deal between them', () => {
+  const r = level2Lane();
+  const brief = r.scene.sortieBriefing();
+  const won = r.scene.sortieEndCopy(true);
+
+  assert.match(brief.summary, /^Objective:/, 'the briefing opens with the objective');
+  assert.match(brief.summary, /cross the yard/);
+  assert.match(brief.summary, /mercenary salvager.*worklight/i);
+  assert.match(brief.summary, /break contact.*before it alerts the Imperial patrol/i,
+    'the worklight and the Imperial patrol are distinct and the alarm cost is clear');
+  assert.ok(brief.summary.length <= 170, `the briefing summary wraps to three lines (${brief.summary.length} chars)`);
+
+  assert.match(won.summary, /route record/i);
+  assert.match(won.summary, /amber markers/i);
+  assert.match(won.summary, /Solar Altar/, 'the payoff names the next stop instead of "past this yard"');
+  assert.equal(won.button, 'Replay Both Sorties');
+  assert.equal(won.tag, 'Two Sorties Clear');
+  assert.ok(won.summary.length <= 170, `the debrief wraps to three lines (${won.summary.length} chars)`);
+
+  const banners = level2Banners(r.scene.levelStageData).map((banner) => banner.text);
+  assert.equal(banners.filter((text) => /SOLAR ALTAR/.test(text)).length, 2,
+    'the markers and the route record both name the Solar Altar');
+  const mercenaryBanner = banners.find((text) => /MERCENARY/.test(text));
+  assert.ok(mercenaryBanner, 'a banner names the salvagers in the lane');
+  assert.ok(!/IMPERIAL/.test(mercenaryBanner), 'the mercenary banner never tags the salvagers as Imperial');
+
+  const everything = [brief.summary, won.summary, ...banners].join(' ').toLowerCase();
+  for (const phrase of ['contract', 'hired', 'allegiance', 'employer', 'employed', 'retainer', 'working for', 'paid by']) {
+    assert.ok(!everything.includes(phrase), `no Level 2 copy invents "${phrase}"`);
+  }
+});
+
+// Waves and announcements stay live here: only the scenery, the player and the
+// collisions are stubbed out, so the lane says what it scheduled and when.
+test('the banners play in order and the route record is up when the run clears', () => {
+  const r = graveyardScene();
+  const scene = r.scene;
+  // Keep the crossing clean: the Lancer stays outside the worklight cone.
+  scene.state.player.x = 500;
+  scene.state.player.y = 520;
+  scene.state.graveyard.salvager.speed = 0;
+
+  const liveWaves = scene.updateWaves;
+  const liveAnnouncements = scene.updateAnnouncements;
+  prepareLaneLoop(scene);
+  scene.updateWaves = liveWaves;
+  scene.updateAnnouncements = liveAnnouncements;
+  scene.state.waves = scene.buildWavePlan();
+
+  const scheduled = level2Banners(scene.levelStageData);
+  const shown = [];
+  let current = null;
+  for (let i = 0; i < 320 && scene.state.mode === 'playing'; i += 1) {
+    scene.time.now += 100;
+    scene.update(0, 100);
+    const banner = scene.state.announcements[0]?.text ?? null;
+    if (banner && banner !== current) {
+      current = banner;
+      shown.push({ time: scene.state.time, text: banner });
+    }
+  }
+
+  assert.equal(scene.state.mode, 'victory');
+  assert.deepEqual(shown.map((banner) => banner.text), scheduled.map((banner) => banner.text),
+    'the lane says exactly what it scheduled, in order');
+  shown.forEach((banner, index) => {
+    assert.ok(Math.abs(banner.time - scheduled[index].time) <= 0.11,
+      `"${banner.text}" shown at ${banner.time.toFixed(1)}s, scheduled for ${scheduled[index].time}s`);
+  });
+  const last = shown[shown.length - 1];
+  assert.ok(scene.state.time - last.time >= 1.9,
+    `the route record is on screen for ${(scene.state.time - last.time).toFixed(1)}s before the clear`);
+  assert.equal(r.sounds.length, 0, 'a clean crossing stays quiet');
 });

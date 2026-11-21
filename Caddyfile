@@ -39,7 +39,10 @@
                 Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://ajax.googleapis.com https://d3e54v103j8qbb.cloudfront.net https://api.rss2json.com https://*.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.medium.com https://medium.com; connect-src 'self' https://api.rss2json.com https://*.cloudflareinsights.com; frame-src 'none'; object-src 'none'; worker-src 'self' blob:;"
             }
             
-            try_files {path}.html {path}/index.html {path} =404
+            # Resolve the homepage explicitly; leave directory canonicalization
+            # to file_server so relative links and query strings keep working.
+            rewrite / /index.html
+            try_files {path} {path}.html {path}/ =404
             file_server
         }
     }

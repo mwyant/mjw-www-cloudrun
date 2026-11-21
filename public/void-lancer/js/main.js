@@ -248,6 +248,8 @@ class MockupLevelScene extends Phaser.Scene {
     this.load.image('bgPlatformNear', 'void_lancer_pack/bg_platform_near_1.webp');
     this.load.image('bgPlatformForeground', 'void_lancer_pack/bg_platform_foreground_sheet_1.webp');
     this.load.image('bgDebrisStrip', 'void_lancer_pack/bg_debris_strip_1.webp');
+    this.load.image('bgGraveyardLane', 'void_lancer_pack/bg_graveyard_lane_1.webp');
+    this.load.image('graveyardSalvager', 'void_lancer_pack/graveyard_salvager_1.webp');
     this.load.image('bgMegaStructureNear', 'void_lancer_pack/bg_megastructure_near_1.webp');
     this.load.image('playerShip', 'void_lancer_pack/player_ship_idle_1.webp');
     this.load.image('playerShipPulse', 'void_lancer_pack/player_ship_pulse_plus_1.webp');
@@ -548,7 +550,10 @@ class MockupLevelScene extends Phaser.Scene {
     if (this.sortieIndex === 2) {
       return {
         title: 'Graveyard Lane',
-        summary: "The Carrier's route ends in the Palace-ship graveyard. Cross the yard and keep clear of the mercenary worklight: hold contact and the Imperial patrol wakes up.",
+        // Objective first, then who owns the light and what holding contact
+        // costs: the salvager is an independent mercenary, the patrol is the
+        // Imperial survivors, and no arrangement between them is claimed.
+        summary: 'Objective: cross the yard. Break contact with the mercenary salvager’s worklight before it alerts the Imperial patrol.',
         detail: 'Touch: slide on the left; hold Fire. Keyboard: WASD / arrows, Space / J / K.',
         button: 'Start Sortie',
         tag: 'Mission Briefing',
@@ -605,7 +610,9 @@ class MockupLevelScene extends Phaser.Scene {
     if (victory && this.sortieIndex === 2) {
       return {
         title: 'Run Complete',
-        summary: 'Carrier down, graveyard crossed. The route record and the marker trail point past this yard, and the run is yours to repeat.',
+        // Payoff in the same order the lane taught it: route record, amber
+        // markers, Solar Altar, then the replay the button offers.
+        summary: 'Graveyard crossed. The amber markers match the Carrier’s route record. Next stop: the Solar Altar.',
         detail: score,
         button: 'Replay Both Sorties',
         tag: 'Two Sorties Clear',
@@ -732,10 +739,17 @@ class MockupLevelScene extends Phaser.Scene {
     detection.originY = salvager.baseY + salvager.lampOffsetY;
 
     this.graveyardObjects = [];
+    // The yard illustration has authored edges. Pan inside it, never wrap it.
+    const backdrop = this.add.image(GAME_WIDTH / 2 + 20, GAME_HEIGHT / 2, 'bgGraveyardLane')
+      .setDepth(DEPTH.graveyardScenery - 0.5);
+    this.graveyardObjects.push(backdrop);
     this.graveyardDebris = this.add.tileSprite(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 'bgDebrisStrip')
-      .setAlpha(0.24)
+      .setAlpha(0.14)
       .setDepth(DEPTH.graveyardScenery);
     this.graveyardObjects.push(this.graveyardDebris);
+
+    const markers = [465, 447, 476].map((y) => this.buildSalvageMarker(y));
+    this.graveyardObjects.push(...markers);
 
     salvager.container = this.buildSalvagerBoat(salvager);
     this.graveyardObjects.push(salvager.container);
@@ -756,53 +770,38 @@ class MockupLevelScene extends Phaser.Scene {
       .setDepth(DEPTH.graveyardAlert);
     this.graveyardObjects.push(alertText, alertChevron);
 
-    this.state.graveyard = { detection, salvager, beam, alertText, alertChevron };
+    this.state.graveyard = { detection, salvager, backdrop, markers, beam, alertText, alertChevron };
   }
 
-  // Procedural slate workboat: blunt nose and open jaw on the left, an open
-  // cargo gap through the middle, raised power block at the rear. Drawn from
-  // primitives only; no draft asset is added to public/.
   buildSalvagerBoat(salvager) {
     const container = this.add.container(salvager.x, salvager.baseY).setDepth(DEPTH.graveyardBoat);
-    const hull = 0x4a5666;
-    const hullDark = 0x2c3542;
-    const hullLight = 0x5d6a7b;
-
+    const { lampOffsetX: x, lampOffsetY: y } = salvager;
+    const lampPool = this.add.ellipse(x - 19, y + 9, 49, 19, WORK_LIGHT_COLOR, 0.16)
+      .setBlendMode(Phaser.BlendModes.ADD);
     const parts = [
-      // Blunt prow with an open grappler jaw (the single hot point).
-      this.add.rectangle(-32, 1, 26, 26, hull),
-      this.add.rectangle(-32, 13, 26, 6, hullDark),
-      this.add.rectangle(-22, -9, 7, 9, hullLight),
-      this.add.rectangle(-47, -6, 9, 5, 0x8a97a8),
-      this.add.rectangle(-47, 5, 9, 5, 0x8a97a8),
-      this.add.rectangle(-51, -1, 6, 3, 0xfff2dc, 0.95),
-      // Cargo gap: rails top and bottom, dark open bay between them.
-      this.add.rectangle(-6, -12, 28, 5, 0x3b4553),
-      this.add.rectangle(-6, 12, 28, 5, 0x333d4a),
-      this.add.rectangle(-6, 0, 26, 16, 0x111821, 0.95),
-      this.add.rectangle(-16, 0, 3, 16, 0x525e6e),
-      this.add.rectangle(-4, 0, 3, 16, 0x525e6e),
-      this.add.rectangle(6, 0, 3, 16, 0x525e6e),
-      this.add.rectangle(-9, 6, 14, 3, 0x5c6878, 0.9),
-      this.add.circle(1, 7, 4, 0x66717f, 0.9),
-      // Raised rear: hull block, superstructure, mast, engine stub.
-      this.add.rectangle(26, 4, 34, 20, 0x445061),
-      this.add.rectangle(30, -14, 22, 16, 0x4e5a6b),
-      this.add.rectangle(30, -18, 18, 3, 0x2b3440),
-      this.add.rectangle(44, 2, 6, 12, 0x323c49),
-      this.add.rectangle(20, -28, 3, 14, 0x39434f),
+      this.add.image(0, -1, 'graveyardSalvager').setDisplaySize(96, 96 * 73 / 192),
+      // Hood and lens stay at the same world-space origin as the lookout cone.
+      this.add.rectangle(x + 4, y + 12, 4, 19, 0x647285),
+      this.add.rectangle(x + 4, y, 15, 10, 0x283341),
+      lampPool,
+      this.add.rectangle(x, y, 5, 6, 0xffe4ba),
     ];
-
-    const lampGlow = this.add.circle(salvager.lampOffsetX, salvager.lampOffsetY, 16, WORK_LIGHT_COLOR, 0.12)
-      .setBlendMode(Phaser.BlendModes.ADD);
-    const lampPool = this.add.ellipse(salvager.lampOffsetX, salvager.lampOffsetY, 54, 34, WORK_LIGHT_COLOR, 0.16)
-      .setBlendMode(Phaser.BlendModes.ADD);
-    const lampLens = this.add.circle(salvager.lampOffsetX, salvager.lampOffsetY, 5, 0xfff1dc, 0.95);
-    parts.push(lampGlow, lampPool, lampLens);
-
     container.add(parts);
     salvager.lampPool = lampPool;
     return container;
+  }
+
+  // Amber lamps mounted on cut trusses. Scenery only, never a pickup or target.
+  buildSalvageMarker(y) {
+    const marker = this.add.container(GAME_WIDTH + 32, y).setDepth(DEPTH.graveyardScenery + 1);
+    marker.add([
+      this.add.rectangle(0, 0, 43, 9, 0x334458),
+      this.add.rectangle(-16, 5, 5, 15, 0x334458),
+      this.add.rectangle(16, 5, 5, 15, 0x334458),
+      this.add.rectangle(0, -7, 15, 4, 0x58351e),
+      this.add.rectangle(0, -8, 10, 4, 0xe5a559),
+    ]);
+    return marker;
   }
 
   // The cone is rebuilt from the detection triangle in world space each frame,
@@ -855,7 +854,10 @@ class MockupLevelScene extends Phaser.Scene {
     if (salvager.container) {
       salvager.container.x = salvager.x;
       salvager.container.y = salvager.y;
-      salvager.container.rotation = Math.sin(this.state.time * 0.7 + salvager.phase) * 0.02;
+    }
+    yard.backdrop.x = GAME_WIDTH / 2 + 20 - 40 * Math.min(1, this.state.time / LEVEL_2_STAGE_DATA.missionDuration);
+    for (let i = 0; i < yard.markers.length; i += 1) {
+      yard.markers[i].x = GAME_WIDTH + 32 + 142 * i - 43 * Math.max(0, this.state.time - 11);
     }
     if (this.graveyardDebris) this.graveyardDebris.tilePositionX += 16 * dt;
 

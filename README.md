@@ -124,6 +124,20 @@ and in both landscape orientations — is GitHub issue #14: a follow-up, not a
 blocker, and no redesign is requested; independent steering and firing,
 hold-to-fire, and the uncropped playfield stay as they are.
 
+### Graveyard Sortie
+
+Defeat the Siege Carrier and choose **Continue to Graveyard**, or open
+`/void-lancer/?sortie=2` to practice the lane directly. Break contact when the
+salvager's worklight sweeps over your ship. Sustained contact alerts the Imperial
+patrol already in the yard; the workboat itself never fires. The amber salvage
+tags are scenery, not pickups or objectives to collect.
+
+The Level 2 runtime WebPs are derived from the Graveyard lane illustration and
+transparent salvager cutout in the `imr-pilot` design batch. The 1008×567 lane
+image pans within its edges rather than repeating; its center is dimmed behind
+gameplay. The salvager keeps its open grapple and cargo gap and uses a separate
+hooded lamp aligned to the lookout cone.
+
 ## Production Deployment
 Production deployment is handled by Cloud Run's connected repository
 integration. It is not triggered by GitHub Actions. The workflow files under

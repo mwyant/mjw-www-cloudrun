@@ -2,6 +2,13 @@
 // Imperial patrol, one tagged turret the worklight alarm can wake, and no
 // boss. missionDuration is the clear time; the lane is meant to be crossed,
 // not farmed.
+//
+// The lane reads in four beats: objective (0.6s), who owns the worklight
+// (5.5s), the amber markers the route record follows (12.0s), then a bounded
+// exit beat - the last wave at 25.5s, nothing spawns after it, and the route
+// record names the next stop while the run is still live. Announcements are
+// spaced so each one finishes before the next arrives (the queue ticks every
+// banner's ttl together, so overlapping entries would cut each other off).
 window.VoidLancerLevel2StageData = {
   missionDuration: 30,
   waveTimeline: [
@@ -21,7 +28,9 @@ window.VoidLancerLevel2StageData = {
     {
       time: 0.6,
       actions: [
-        { type: 'announce', text: 'ROUTE RECORD // GRAVEYARD LANE', ttl: 3, kind: 'notice' },
+        // The objective lands before the first fight so the run has a stated
+        // destination, not just a timer.
+        { type: 'announce', text: 'OBJECTIVE // CROSS THE GRAVEYARD', ttl: 3, kind: 'notice' },
       ],
     },
     {
@@ -35,6 +44,14 @@ window.VoidLancerLevel2StageData = {
             { type: 'scout', x: 1140, y: 386 },
           ],
         },
+      ],
+    },
+    {
+      // Independent mercenary salvager, not the Imperial survivors: the light
+      // is theirs, and the boat is scenery, never a target.
+      time: 5.5,
+      actions: [
+        { type: 'announce', text: 'WORKLIGHT // MERCENARY SALVAGER', ttl: 3, kind: 'notice' },
       ],
     },
     {
@@ -52,7 +69,9 @@ window.VoidLancerLevel2StageData = {
     {
       time: 12.0,
       actions: [
-        { type: 'announce', text: 'MARKER TRAIL // SALVAGE RUN IN PROGRESS', ttl: 2.6, kind: 'notice' },
+        // The amber markers sweep into the lane around here: the copy names
+        // where they lead while they are on screen.
+        { type: 'announce', text: 'AMBER MARKERS // ONWARD TO THE SOLAR ALTAR', ttl: 2.6, kind: 'notice' },
         {
           type: 'spawnEnemies',
           enemies: [
@@ -90,8 +109,11 @@ window.VoidLancerLevel2StageData = {
       ],
     },
     {
+      // The close: one last resistance, then nothing else spawns. The run is
+      // bounded from here - hold the lane and the exit beat is the rest.
       time: 25.5,
       actions: [
+        { type: 'announce', text: 'FINAL WAVE // HOLD THE LANE', ttl: 2, kind: 'warning' },
         {
           type: 'spawnEnemies',
           enemies: [
@@ -99,6 +121,14 @@ window.VoidLancerLevel2StageData = {
             { type: 'drone', x: 1090, y: 352, options: { speed: 242 } },
           ],
         },
+      ],
+    },
+    {
+      // Route-record payoff: the lane closes on the destination it opened
+      // with, still on screen so the clear does not arrive cold.
+      time: 28.0,
+      actions: [
+        { type: 'announce', text: 'ROUTE RECORD // NEXT LEG: THE SOLAR ALTAR', ttl: 2, kind: 'notice' },
       ],
     },
   ],

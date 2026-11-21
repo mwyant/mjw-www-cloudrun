@@ -549,7 +549,7 @@ class MockupLevelScene extends Phaser.Scene {
       return {
         title: 'Graveyard Lane',
         summary: "The Carrier's route ends in the Palace-ship graveyard. Cross the yard and keep clear of the mercenary worklight: hold contact and the Imperial patrol wakes up.",
-        detail: 'Touch: use the pad and hold Fire. Keyboard: WASD / arrows, Space / J / K.',
+        detail: 'Touch: slide on the left; hold Fire. Keyboard: WASD / arrows, Space / J / K.',
         button: 'Start Sortie',
         tag: 'Mission Briefing',
         accent: COLORS.cyan,
@@ -559,7 +559,7 @@ class MockupLevelScene extends Phaser.Scene {
     return {
       title: 'Launch Window Open',
       summary: 'Escort corridor zero is hot. Survive the opening waves, grab the pulse upgrade, and break the siege carrier at the end of the lane.',
-      detail: 'Touch: use the pad and hold Fire. Keyboard: WASD / arrows, Space / J / K.',
+      detail: 'Touch: slide on the left; hold Fire. Keyboard: WASD / arrows, Space / J / K.',
       button: 'Start Sortie',
       tag: 'Mission Briefing',
       accent: COLORS.cyan,
@@ -2189,7 +2189,9 @@ class MockupLevelScene extends Phaser.Scene {
     });
     const keyboard = VoidLancerInput.attachKeyboard(window, document, this.actionState, () => this.getControlContext());
     const playfield = document.getElementById('playfield');
-    const touch = playfield && VoidLancerInput.attachTouch(playfield, this.actionState, () => this.getControlContext());
+    const touch = playfield && VoidLancerInput.attachTouch(
+      playfield, this.actionState, () => this.getControlContext(), window,
+    );
     this.touchControls = touch;
     window.voidLancerControls = keyboard.mapping;
     const cleanup = () => {

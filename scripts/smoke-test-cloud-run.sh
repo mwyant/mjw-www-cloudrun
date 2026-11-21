@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # mjw-webhost/scripts/smoke-test-cloud-run.sh
-# Verifies that the site homepage and health endpoint respond correctly.
+# Verifies the homepage, health endpoint, and Void Lancer entry point.
 
 set -euo pipefail
 
@@ -43,5 +43,14 @@ if [ "$ping" != "OK" ]; then
   exit 1
 fi
 echo "  /ping -> OK"
+
+echo "Checking /void-lancer (expect a trailing-slash redirect that preserves the query)..."
+redirect=$(curl --fail --silent --show-error --output /dev/null \
+  --write-out '%{http_code} %{redirect_url}' "$URL/void-lancer?sortie=2")
+if [[ "$redirect" != "308 $URL/void-lancer/?sortie=2" ]]; then
+  echo "FAIL: /void-lancer returned $redirect"
+  exit 1
+fi
+echo "  /void-lancer?sortie=2 -> /void-lancer/?sortie=2"
 
 echo "Smoke test PASSED"

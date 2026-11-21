@@ -250,7 +250,7 @@ test('Carrier victory offers Continue to Graveyard instead of starting it', () =
   assert.equal(r.scene.state.score, 1200, 'the run score carries into the lane');
 });
 
-test('dying in the Graveyard retries only the Graveyard, clearing it replays the pair', () => {
+test('dying in the Graveyard retries only the Graveyard, clearing it continues the chain', () => {
   const r = runtime();
   r.scene.state.score = 1200;
   r.scene.finishGame(true);
@@ -272,13 +272,20 @@ test('dying in the Graveyard retries only the Graveyard, clearing it replays the
 
   r.scene.state.score = 1900;
   r.scene.finishGame(true);
-  assert.equal(r.overlay().button, 'Replay Both Sorties');
-  assert.equal(r.overlay().tag, 'Two Sorties Clear');
+  assert.equal(r.overlay().button, 'Continue to Solar Altar');
+  assert.equal(r.overlay().tag, 'Two of Three Clear');
+  assert.equal(r.overlay().title, 'Graveyard Secured', 'the intermediate debrief never reads as a finish line');
 
   r.scene.startGame();
-  assert.equal(r.scene.sortieIndex, 1, 'a replay starts the run over');
+  assert.equal(r.scene.sortieIndex, 3, 'a cleared Graveyard offers the Solar Altar next');
   assert.equal(r.scene.state.mode, 'intro');
-  assert.equal(r.scene.state.score, 0);
+  assert.equal(r.overlay().title, 'Solar Altar');
+  assert.equal(r.overlay().button, 'Start Sortie');
+  assert.equal(r.scene.state.score, 1900, 'the run score carries into the third lane');
+
+  r.scene.startGame();
+  assert.equal(r.scene.sortieIndex, 3);
+  assert.equal(r.scene.state.mode, 'playing');
 });
 
 test('First Sortie failure still restarts the First Sortie', () => {
@@ -347,13 +354,18 @@ test('the HUD stage counter follows the active sortie', () => {
 
   r.scene.sortieIndex = 1;
   r.scene.syncHud();
-  assert.equal(stageText.value, '01 / 02');
+  assert.equal(stageText.value, '01 / 03');
   assert.equal(stageTag.value, 'OPENING LANE');
 
   r.scene.sortieIndex = 2;
   r.scene.syncHud();
-  assert.equal(stageText.value, '02 / 02');
+  assert.equal(stageText.value, '02 / 03');
   assert.equal(stageTag.value, 'GRAVEYARD LANE');
+
+  r.scene.sortieIndex = 3;
+  r.scene.syncHud();
+  assert.equal(stageText.value, '03 / 03');
+  assert.equal(stageTag.value, 'ALTAR LANE');
 });
 
 test('the worklight sweep, lock, grace and alarm follow one continuous contact', () => {
@@ -634,7 +646,7 @@ function prepareLaneLoop(scene) {
   }
 }
 
-test('the run ends on the Graveyard timer with the two-sortie completion', () => {
+test('the run ends on the Graveyard timer and offers the Solar Altar', () => {
   const r = graveyardScene();
   const scene = r.scene;
   // Keep the crossing clean: the Lancer stays outside the worklight cone.
@@ -649,7 +661,7 @@ test('the run ends on the Graveyard timer with the two-sortie completion', () =>
   }
 
   assert.equal(scene.state.mode, 'victory');
-  assert.equal(r.overlay().button, 'Replay Both Sorties');
+  assert.equal(r.overlay().button, 'Continue to Solar Altar');
   assert.ok(scene.state.time <= 30.1, `the lane cleared at ${scene.state.time.toFixed(1)}s`);
   assert.equal(r.sounds.length, 0, 'a clean crossing stays quiet');
 });
@@ -787,8 +799,9 @@ test('the Level 2 copy names the objective, both parties and the Solar Altar wit
   assert.match(won.summary, /route record/i);
   assert.match(won.summary, /amber markers/i);
   assert.match(won.summary, /Solar Altar/, 'the payoff names the next stop instead of "past this yard"');
-  assert.equal(won.button, 'Replay Both Sorties');
-  assert.equal(won.tag, 'Two Sorties Clear');
+  assert.equal(won.button, 'Continue to Solar Altar');
+  assert.equal(won.tag, 'Two of Three Clear');
+  assert.equal(won.title, 'Graveyard Secured');
   assert.ok(won.summary.length <= 170, `the debrief wraps to three lines (${won.summary.length} chars)`);
 
   const banners = level2Banners(r.scene.levelStageData).map((banner) => banner.text);

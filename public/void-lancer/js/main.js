@@ -5,6 +5,8 @@ const DEPTH = {
   backgroundFx: 10,
   atmosphereFar: 14,
   graveyardScenery: 16,
+  altarScenery: 16,
+  altarRings: 17,
   atmosphereMid: 18,
   foregroundProps: 20,
   graveyardBeam: 22,
@@ -158,6 +160,11 @@ const FX_LIBRARY = {
 const DEFAULT_STAGE_DATA = { waveTimeline: [], backdropCues: [], environmentTimeline: [] };
 const LEVEL_1_STAGE_DATA = window.VoidLancerLevel1StageData || DEFAULT_STAGE_DATA;
 const LEVEL_2_STAGE_DATA = window.VoidLancerLevel2StageData || DEFAULT_STAGE_DATA;
+const LEVEL_3_STAGE_DATA = window.VoidLancerLevel3StageData || DEFAULT_STAGE_DATA;
+
+// The HUD stage counter covers the whole eligible chain, not one lane's own
+// pair: First Sortie, Graveyard, Solar Altar.
+const STAGE_LABELS = ['01 / 03', '02 / 03', '03 / 03'];
 
 const STAGE_BACKGROUND_MODULE_LAYOUT = [
   { kind: 'towerCluster', x: GAME_WIDTH + 40, y: 96, speed: 13, scale: 1.0, alpha: 0.24, wobbleAmount: 1.0, wobbleSpeed: 0.58, recycleGap: 220 },
@@ -184,6 +191,26 @@ const GRAVEYARD_STAGE_MODULE_LAYOUT = [
 // the yard reads as civilian lighting rather than a hazard telegraph.
 const WORK_LIGHT_COLOR = 0xffd9a0;
 
+// Solar Altar reuses the same scenery builders again, slower and sparser than
+// the First Sortie and leaning on altar gold, so the subdued-gold defense
+// backdrop stays quiet enough to read the Warden's ember core against it. The
+// lane itself is the altar illustration (bg_altar_lane_1): one authored frame
+// that pans inside its own edges and never repeats, exactly like the Graveyard
+// lane. The rings, ember pools and repair faces are the fallback dressing for
+// when that frame is not in the pack yet.
+const ALTAR_STAGE_MODULE_LAYOUT = [
+  { kind: 'deadPlatformSilhouette', x: GAME_WIDTH + 160, y: 104, speed: 7, scale: 1.3, alpha: 0.15, wobbleAmount: 0.35, wobbleSpeed: 0.3, recycleGap: 320 },
+  { kind: 'lightShaft', x: GAME_WIDTH + 540, y: 58, speed: 6, scale: 0.95, alpha: 0.24, beamWidth: 18, beamHeight: 300, color: COLORS.gold, wobbleAmount: 0.5, wobbleSpeed: 0.4, recycleGap: 200 },
+  { kind: 'machineryPass', x: GAME_WIDTH + 980, y: 434, speed: 6, scale: 0.9, alpha: 0.16, wobbleAmount: 0.6, wobbleSpeed: 0.4, recycleGap: 280 },
+  { kind: 'railSection', x: GAME_WIDTH + 1420, y: 424, speed: 7, scale: 1.0, alpha: 0.14, wobbleAmount: 0.5, wobbleSpeed: 0.36, recycleGap: 300 },
+  { kind: 'lightShaft', x: GAME_WIDTH + 1880, y: 452, speed: 6, scale: 0.9, alpha: 0.2, beamWidth: 16, beamHeight: 280, color: COLORS.gold, wobbleAmount: 0.4, wobbleSpeed: 0.36, recycleGap: 210 },
+];
+
+// The lane frame is 1008px wide against a 960px playfield, so a short pan has
+// exactly this much slack before an edge would show. It runs over 30s - the
+// Graveyard lane's crossing length - and then parks, so nothing ever repeats.
+const ALTAR_LANE_PAN = { start: GAME_WIDTH / 2 + 20, span: 40, seconds: 30 };
+
 function lerp(a, b, t) {
   return a + (b - a) * t;
 }
@@ -207,11 +234,13 @@ class MockupLevelScene extends Phaser.Scene {
     super('MockupLevel');
     this.assetManifest = null;
     this.levelStageData = LEVEL_1_STAGE_DATA;
-    // Resolved from ?sortie=2 when the scene boots; 1 is the First Sortie.
+    // Resolved from ?sortie=2 (Graveyard) or ?sortie=3 (Solar Altar) when the
+    // scene boots; 1 is the First Sortie.
     this.sortieIndex = 1;
     this.carriedScore = 0;
     this.graveyardObjects = [];
     this.graveyardDebris = null;
+    this.altarObjects = [];
     this.soundEnabled = true;
     this.soundToggleButton = null;
     this.audioContext = null;
@@ -249,7 +278,9 @@ class MockupLevelScene extends Phaser.Scene {
     this.load.image('bgPlatformForeground', 'void_lancer_pack/bg_platform_foreground_sheet_1.webp');
     this.load.image('bgDebrisStrip', 'void_lancer_pack/bg_debris_strip_1.webp');
     this.load.image('bgGraveyardLane', 'void_lancer_pack/bg_graveyard_lane_1.webp');
+    this.load.image('bgAltarLane', 'void_lancer_pack/bg_altar_lane_1.webp');
     this.load.image('graveyardSalvager', 'void_lancer_pack/graveyard_salvager_1.webp');
+    this.load.image('altarWarden', 'void_lancer_pack/altar_warden_1.webp');
     this.load.image('bgMegaStructureNear', 'void_lancer_pack/bg_megastructure_near_1.webp');
     this.load.image('playerShip', 'void_lancer_pack/player_ship_idle_1.webp');
     this.load.image('playerShipPulse', 'void_lancer_pack/player_ship_pulse_plus_1.webp');
@@ -330,6 +361,7 @@ class MockupLevelScene extends Phaser.Scene {
 
     this.setupStageBackdropModules();
     if (this.sortieIndex === 2) this.setupGraveyardSortie();
+    if (this.sortieIndex === 3) this.setupAltarSortie();
 
     this.syncHud();
     this.hideBossBar();
@@ -337,6 +369,7 @@ class MockupLevelScene extends Phaser.Scene {
   }
 
   getLevelStageData() {
+    if (this.sortieIndex === 3) return LEVEL_3_STAGE_DATA;
     return this.sortieIndex === 2 ? LEVEL_2_STAGE_DATA : LEVEL_1_STAGE_DATA;
   }
 
@@ -533,6 +566,7 @@ class MockupLevelScene extends Phaser.Scene {
   destroyDynamicObjects() {
     this.destroyStageBackdropModules();
     this.destroyGraveyardObjects();
+    this.destroyAltarObjects();
     const pools = ['bullets', 'enemies', 'powerUps', 'fx', 'environmentPanels'];
     if (this.state) {
       for (const pool of pools) {
@@ -547,6 +581,19 @@ class MockupLevelScene extends Phaser.Scene {
   }
 
   sortieBriefing() {
+    if (this.sortieIndex === 3) {
+      return {
+        title: 'Solar Altar',
+        // Objective first, then the one mechanic the Warden is built around:
+        // the ember core flares for a full beat before any ring leaves it.
+        summary: 'Objective: cross the altar lane and break the Altar Warden. Its ember core flares before every radial burst. Read the flare, then commit.',
+        detail: 'Touch: slide on the left; hold Fire. Keyboard: WASD / arrows, Space / J / K.',
+        button: 'Start Sortie',
+        tag: 'Mission Briefing',
+        accent: COLORS.cyan,
+        subtitle: 'VOID LANCER // SOLAR ALTAR SORTIE',
+      };
+    }
     if (this.sortieIndex === 2) {
       return {
         title: 'Graveyard Lane',
@@ -584,7 +631,8 @@ class MockupLevelScene extends Phaser.Scene {
     if (this.state?.mode === 'victory') {
       // A cleared sortie never starts the next one by itself: the overlay
       // offers the next lane (or a full replay) and its briefing follows.
-      this.enterSortie(this.sortieIndex === 2 ? 1 : 2);
+      // The chain runs First Sortie -> Graveyard -> Solar Altar -> replay.
+      this.enterSortie(this.sortieIndex === 3 ? 1 : this.sortieIndex + 1);
       return;
     }
     this.beginSortie();
@@ -597,9 +645,9 @@ class MockupLevelScene extends Phaser.Scene {
   }
 
   enterSortie(index) {
-    const next = index === 2 ? 2 : 1;
-    // Score carries across a run; replaying the pair starts the run over.
-    this.carriedScore = next === 2 ? (this.state?.score || 0) : 0;
+    const next = index === 3 ? 3 : index === 2 ? 2 : 1;
+    // Score carries across a run; replaying the run starts it over.
+    this.carriedScore = next === 1 ? 0 : (this.state?.score || 0);
     this.sortieIndex = next;
     this.resetGame();
     this.showIntro();
@@ -607,15 +655,31 @@ class MockupLevelScene extends Phaser.Scene {
 
   sortieEndCopy(victory) {
     const score = `Score: ${this.state.score}`;
+    if (victory && this.sortieIndex === 3) {
+      return {
+        title: 'Solar Altar Secured',
+        // Campaign payoff: the wreckage stops being a war economy and becomes
+        // somewhere to live. No salvage loop, no allegiance claim - just the
+        // visible aftermath the campaign asks for.
+        summary: 'The Warden and the last organized Imperial force are gone. Survivors strip the wreckage for a garden world: homes, tools, a society, not a fleet.',
+        detail: score,
+        button: 'Replay the Run',
+        tag: 'Campaign Clear',
+        accent: COLORS.gold,
+        subtitle: 'Corridor free // garden world founded',
+      };
+    }
     if (victory && this.sortieIndex === 2) {
       return {
-        title: 'Run Complete',
+        // Two of three: the run is still going, so neither the title nor the
+        // tag may read as a finish line.
+        title: 'Graveyard Secured',
         // Payoff in the same order the lane taught it: route record, amber
-        // markers, Solar Altar, then the replay the button offers.
+        // markers, Solar Altar, then the leg the button offers.
         summary: 'Graveyard crossed. The amber markers match the Carrier’s route record. Next stop: the Solar Altar.',
         detail: score,
-        button: 'Replay Both Sorties',
-        tag: 'Two Sorties Clear',
+        button: 'Continue to Solar Altar',
+        tag: 'Two of Three Clear',
         accent: COLORS.gold,
         subtitle: 'First Sortie and Graveyard secured',
       };
@@ -629,6 +693,17 @@ class MockupLevelScene extends Phaser.Scene {
         tag: 'Mission Clear',
         accent: COLORS.gold,
         subtitle: 'Carrier neutralized',
+      };
+    }
+    if (this.sortieIndex === 3) {
+      return {
+        title: 'Mission Failed',
+        summary: 'The Altar Warden still holds the corridor. The lane is waiting for another run.',
+        detail: score,
+        button: 'Retry Solar Altar',
+        tag: 'Mission Failed',
+        accent: COLORS.red,
+        subtitle: 'The altar still stands',
       };
     }
     if (this.sortieIndex === 2) {
@@ -667,7 +742,8 @@ class MockupLevelScene extends Phaser.Scene {
 
     this.overlayDim.setVisible(true);
     this.overlayPanel.setVisible(true);
-    this.overlayLogo.setVisible(true);
+    // The legacy wordmark includes “First Sortie”; don't put it on the finale.
+    this.overlayLogo.setVisible(this.sortieIndex !== 3);
     this.overlayLogoGlow.setVisible(true);
     this.overlayMotionLayer.setVisible(true);
     this.overlayTag.setVisible(Boolean(tag));
@@ -920,6 +996,123 @@ class MockupLevelScene extends Phaser.Scene {
     this.updateAnnouncementDisplay();
   }
 
+  // --- Solar Altar scenery (sortie 3) -------------------------------------
+  //
+  // The lane is the altar illustration: one authored frame that pans inside its
+  // own edges and never repeats, exactly like the Graveyard backdrop, so the
+  // quiet centre band stays quiet. The procedural rings, ember pools and repair
+  // faces are the fallback dressing for when that frame is not in the pack yet
+  // - one or the other, never stacked. Pure scenery either way: no pickups, no
+  // targets, no hazards, and nothing that fires.
+  setupAltarSortie() {
+    this.altarObjects = [];
+    const backdrop = this.buildAltarBackdrop();
+    this.state.altar = { backdrop, rings: null, glows: [], faces: [] };
+    if (!backdrop) this.buildAltarProceduralDressing();
+  }
+
+  // Null when the frame is missing: the caller dresses the lane procedurally
+  // instead of leaving a hole.
+  buildAltarBackdrop() {
+    if (!this.textures?.exists?.('bgAltarLane')) return null;
+    const image = this.add.image(ALTAR_LANE_PAN.start, GAME_HEIGHT / 2, 'bgAltarLane')
+      .setDepth(DEPTH.altarScenery - 0.5);
+    this.altarObjects.push(image);
+    return { image, pan: ALTAR_LANE_PAN };
+  }
+
+  buildAltarProceduralDressing() {
+    // The altar itself: concentric defense rings parked where the Warden holds
+    // station, so the boss reads as sitting in front of the thing it guards.
+    const rings = this.add.graphics().setDepth(DEPTH.altarRings);
+    const ringSpecs = [
+      { radius: 132, width: 3, alpha: 0.16 },
+      { radius: 176, width: 2, alpha: 0.11 },
+      { radius: 224, width: 2, alpha: 0.07 },
+    ];
+    for (const spec of ringSpecs) {
+      rings.lineStyle(spec.width, COLORS.gold, spec.alpha);
+      rings.strokeCircle(0, 0, spec.radius);
+    }
+    for (let i = 0; i < 24; i += 1) {
+      const angle = (Math.PI * 2 * i) / 24;
+      const inner = i % 3 === 0 ? 124 : 130;
+      const outer = i % 3 === 0 ? 142 : 136;
+      rings.lineStyle(2, COLORS.gold, i % 3 === 0 ? 0.2 : 0.1);
+      rings.lineBetween(Math.cos(angle) * inner, Math.sin(angle) * inner, Math.cos(angle) * outer, Math.sin(angle) * outer);
+    }
+    rings.setPosition(GAME_WIDTH - 236, GAME_HEIGHT / 2);
+    this.altarObjects.push(rings);
+
+    // Ember pools: warm light leaking from the altar deck, additive and slow.
+    const glows = [
+      { x: 300, y: 430, w: 260, h: 70, alpha: 0.07, speed: 1.1 },
+      { x: 640, y: 120, w: 300, h: 84, alpha: 0.06, speed: 0.8 },
+      { x: 830, y: 380, w: 220, h: 62, alpha: 0.08, speed: 1.4 },
+    ].map((config) => {
+      const glow = this.add.ellipse(config.x, config.y, config.w, config.h, COLORS.orange, config.alpha)
+        .setDepth(DEPTH.altarScenery)
+        .setBlendMode(Phaser.BlendModes.ADD);
+      return { ...config, glow, baseAlpha: config.alpha, phase: Phaser.Math.FloatBetween(0, Math.PI * 2) };
+    });
+    this.altarObjects.push(...glows.map((item) => item.glow));
+
+    // Repair faces: patched deck plating drifting down-lane. Scenery only.
+    const faces = [0, 1, 2].map((index) => this.buildAltarRepairFace(GAME_WIDTH + 160 + index * 340, index));
+    this.altarObjects.push(...faces.map((face) => face.container));
+
+    this.state.altar.rings = rings;
+    this.state.altar.glows = glows;
+    this.state.altar.faces = faces;
+  }
+
+  buildAltarRepairFace(x, index) {
+    const baseY = [148, 372, 236][index];
+    const container = this.add.container(x, baseY).setDepth(DEPTH.altarScenery + 1);
+    const width = [116, 138, 96][index];
+    const plate = this.add.rectangle(0, 0, width, 40, 0x1b2432, 0.92).setStrokeStyle(2, 0x3d4c60, 0.7);
+    const seam = this.add.rectangle(0, 0, width - 26, 3, COLORS.gold, 0.34);
+    const lamp = this.add.circle(-width * 0.36, -12, 5, COLORS.gold, 0.7);
+    const lampGlow = this.add.circle(-width * 0.36, -12, 16, COLORS.gold, 0.14).setBlendMode(Phaser.BlendModes.ADD);
+    container.add([plate, seam, lampGlow, lamp]);
+    return { container, x, baseY, speed: 16 + index * 4, width };
+  }
+
+  destroyAltarObjects() {
+    for (const object of this.altarObjects || []) {
+      if (object && typeof object.destroy === 'function') object.destroy();
+    }
+    this.altarObjects = [];
+    if (this.state) this.state.altar = null;
+  }
+
+  // Scenery only, so it keeps moving behind the briefing and the debrief
+  // exactly like the stage backdrop modules do.
+  updateAltar(dt) {
+    const altar = this.state?.altar;
+    if (!altar) return;
+
+    if (altar.backdrop) {
+      // Bounded pan: the frame spends its own slack and then parks, so an edge
+      // never shows and nothing ever repeats. state.time only advances while
+      // the lane is live, which holds the frame still behind the overlays.
+      const progress = this.clamp(this.state.time / altar.backdrop.pan.seconds, 0, 1);
+      altar.backdrop.image.x = altar.backdrop.pan.start - altar.backdrop.pan.span * progress;
+      return;
+    }
+
+    altar.rings.rotation += dt * 0.05;
+    for (const glow of altar.glows) {
+      glow.glow.setAlpha(glow.baseAlpha + Math.sin(this.state.time * glow.speed + glow.phase) * 0.02);
+    }
+    for (const face of altar.faces) {
+      face.x -= face.speed * dt;
+      if (face.x < -(face.width + 80)) face.x = GAME_WIDTH + Phaser.Math.Between(160, 380);
+      face.container.x = face.x;
+      face.container.y = face.baseY + Math.sin(this.state.time * 0.6 + face.x * 0.01) * 6;
+    }
+  }
+
 
   buildWavePlan() {
     return (this.levelStageData?.waveTimeline || []).map((event) => ({
@@ -1073,6 +1266,7 @@ class MockupLevelScene extends Phaser.Scene {
   }
 
   spawnBoss() {
+    if (this.sortieIndex === 3) return this.spawnAltarWarden();
     const manifest = this.assetManifest?.boss || DEFAULT_ASSET_MANIFEST.boss;
     const hp = 360;
     const boss = {
@@ -1098,10 +1292,212 @@ class MockupLevelScene extends Phaser.Scene {
     };
     this.state.boss = boss;
     this.showBossBar();
+    this.bossBarTitle?.setText('SIEGE CARRIER');
     this.state.announcements.unshift({ text: 'BOSS INBOUND // SIEGE CARRIER DETECTED', ttl: 2.5, kind: 'warning' });
     this.updateAnnouncementDisplay();
       this.playSound('bossWarning', { volume: 0.16 });
     return boss;
+  }
+
+  // --- Solar Altar Sortie (sortie 3) --------------------------------------
+
+  spawnAltarWarden() {
+    const tuning = VoidLancerSolarAltar.DEFAULTS;
+    const built = this.buildWardenSprite(GAME_WIDTH + 220, GAME_HEIGHT / 2);
+    const boss = {
+      kind: 'altarWarden',
+      active: true,
+      intro: true,
+      x: GAME_WIDTH + 220,
+      y: GAME_HEIGHT / 2,
+      targetX: GAME_WIDTH - 236,
+      pulse: 0,
+      phase: 1,
+      maxHp: tuning.hp,
+      hp: tuning.hp,
+      radius: tuning.collisionRadius,
+      hitFlash: 0,
+      corePulse: 0,
+      // The attack module owns the telegraph timing and the ring pattern; the
+      // scene only reads chargeRatio() to draw the flare and fires on burst.
+      attack: VoidLancerSolarAltar.createAttack(),
+      sprite: built.container,
+      hull: built.hull,
+      core: built.core,
+      coreGlow: built.coreGlow,
+      coreHalo: built.coreHalo,
+      seams: built.seams,
+      telegraph: built.telegraph,
+    };
+    this.state.boss = boss;
+    this.showBossBar();
+    this.bossBarTitle?.setText('ALTAR WARDEN');
+    this.state.announcements.unshift({ text: 'ALTAR WARDEN // EMBER CORE EXPOSED', ttl: 2.5, kind: 'warning' });
+    this.updateAnnouncementDisplay();
+    this.playSound('bossWarning', { volume: 0.16 });
+    return boss;
+  }
+
+  // ART HOOK: the altar-warden frame ships in the pack and this builder picks
+  // it up on its own; the procedural plates below are the fallback for a pack
+  // without it. Either way the additive ember core, halo and telegraph ring are
+  // drawn on top here, centred on the furnace eye the cutout is registered to,
+  // so the charge reads the same. Nothing else in the scene draws the Warden;
+  // restyle only this method and buildWardenProceduralHull().
+  buildWardenSprite(x, y) {
+    const container = this.add.container(x, y).setDepth(DEPTH.boss);
+    const size = VoidLancerSolarAltar.DEFAULTS.displaySize;
+    const spriteReady = Boolean(this.textures?.exists?.('altarWarden'));
+
+    const hull = spriteReady
+      ? this.add.image(0, 0, 'altarWarden').setDisplaySize(size, size)
+      : this.buildWardenProceduralHull();
+    container.add(hull);
+
+    // Core stack: the artwork already carries the furnace, so this only adds
+    // the charge read on top of it - a compact hot centre, halo and glow, all
+    // additive. Kept small on purpose: at rest the art's own eye shows through,
+    // and the flare is what grows with the charge.
+    const coreGlow = this.add.circle(0, 0, 40, 0xff8a4c, 0.12).setBlendMode(Phaser.BlendModes.ADD);
+    const coreHalo = this.add.circle(0, 0, 24, COLORS.gold, 0.16).setBlendMode(Phaser.BlendModes.ADD);
+    const core = this.add.circle(0, 0, 11, 0xfff1e0, 0.35).setBlendMode(Phaser.BlendModes.ADD);
+
+    // Telegraph ring: transparent fill with a stroke, scaled by chargeRatio().
+    const telegraph = this.add.circle(0, 0, 56, 0x000000, 0)
+      .setStrokeStyle(3, COLORS.orange, 0.9)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setAlpha(0);
+
+    container.add([coreGlow, coreHalo, core, telegraph]);
+
+    return {
+      container,
+      hull,
+      core,
+      coreGlow,
+      coreHalo,
+      telegraph,
+      // The sprite path gets its seams from the artwork; the procedural path
+      // draws crimson slits that flare with the charge.
+      seams: spriteReady ? [] : hull.seams || [],
+    };
+  }
+
+  // Fallback gunmetal-and-gold guardian, used only when the pack has no
+  // altar-warden frame: plates fanning from one exposed core, in the Empire
+  // capital-ship family without cloning the Carrier's stacked prow. Readable at
+  // phone width: one round silhouette, one hot eye.
+  buildWardenProceduralHull() {
+    const hull = this.add.container(0, 0);
+    const seams = [];
+    const plateCount = 12;
+
+    const body = this.add.circle(0, 0, 64, 0x161d28, 0.96).setStrokeStyle(2, 0x38445a, 0.9);
+    const innerRing = this.add.circle(0, 0, 44, 0x000000, 0)
+      .setStrokeStyle(6, 0x2a3442, 0.95);
+
+    const plates = [];
+    for (let i = 0; i < plateCount; i += 1) {
+      const angle = (Math.PI * 2 * i) / plateCount;
+      const plate = this.add.rectangle(Math.cos(angle) * 50, Math.sin(angle) * 50, 36, 26, 0x232d3b, 1)
+        .setStrokeStyle(2, 0x59687c, 0.85)
+        .setRotation(angle);
+      plates.push(plate);
+
+      // Seam between the plates: crimson heat, brightest while the core charges.
+      const seamAngle = angle + Math.PI / plateCount;
+      const seam = this.add.rectangle(Math.cos(seamAngle) * 42, Math.sin(seamAngle) * 42, 34, 3, 0xff5a3c, 0.3)
+        .setRotation(seamAngle)
+        .setBlendMode(Phaser.BlendModes.ADD);
+      seams.push(seam);
+    }
+
+    // Subdued ceremonial gold, edge only: quieter than the core so hazard
+    // telegraphs can outshine it.
+    const trim = this.add.circle(0, 0, 76, 0x000000, 0)
+      .setStrokeStyle(3, COLORS.gold, 0.42);
+    const trimInner = this.add.circle(0, 0, 34, 0x000000, 0)
+      .setStrokeStyle(2, COLORS.gold, 0.3);
+
+    hull.add([body, innerRing, ...seams, ...plates, trim, trimInner]);
+    hull.seams = seams;
+    return hull;
+  }
+
+  updateAltarWarden(dt) {
+    const boss = this.state.boss;
+    // A round guardian holds station in front of the altar and breathes instead
+    // of weaving: the pattern is the threat, not the movement.
+    boss.y = GAME_HEIGHT / 2 + Math.sin(this.state.time * 0.7) * 58;
+    boss.y = this.clamp(boss.y, 140, GAME_HEIGHT - 140);
+
+    const nextPhase = VoidLancerSolarAltar.phaseForRatio(boss.attack, boss.hp / boss.maxHp);
+    if (nextPhase !== boss.attack.phase) {
+      VoidLancerSolarAltar.setPhase(boss.attack, nextPhase);
+      if (nextPhase === 2) {
+        this.state.announcements.unshift({ text: 'WARDEN CORE // OVERDRIVE', ttl: 2, kind: 'warning' });
+        this.updateAnnouncementDisplay();
+        this.playSound('bossWarning', { volume: 0.18 });
+      }
+    }
+
+    const events = VoidLancerSolarAltar.updateAttack(boss.attack, dt);
+    // Same two existing presets the Carrier uses: the warn on the flare, the
+    // crimson pellet on release. No new audio asset.
+    if (events.chargeStart) this.playSound('bossWarning', { volume: 0.14 });
+    if (events.burst) {
+      const { angles, speed } = events.burst;
+      for (const angle of angles) {
+        this.spawnBullet(
+          'enemy',
+          boss.x + Math.cos(angle) * 40,
+          boss.y + Math.sin(angle) * 40,
+          Math.cos(angle) * speed,
+          Math.sin(angle) * speed,
+          5,
+          1,
+          'burst',
+        );
+      }
+      this.playSound('enemyFire', { volume: 0.18, detune: -40 });
+    }
+
+    if (boss.hp <= 0) this.defeatBoss(boss, { score: 3500, ember: true });
+  }
+
+  // One death sequence for both bosses: the Carrier's timing and sounds, plus
+  // the Warden's ember flare when the exposed core finally goes.
+  defeatBoss(boss, options = {}) {
+    this.spawnExplosionFx(boss.x, boss.y, 'boss', {
+      baseScale: 1.2,
+      peakScale: 2.35,
+      burstDistance: 96,
+      shards: 14,
+      smokeCount: 5,
+    });
+    if (options.ember) {
+      this.spawnExplosionFx(boss.x, boss.y, 'medium', {
+        baseScale: 1.0,
+        peakScale: 1.8,
+        burstDistance: 78,
+        shards: 12,
+        smokeCount: 2,
+        palette: [0xfff1e0, COLORS.gold, COLORS.orange],
+      });
+    }
+    this.spawnExplosionFx(boss.x - 50, boss.y - 18, 'medium', { baseScale: 0.9, peakScale: 1.35, burstDistance: 56 });
+    this.spawnExplosionFx(boss.x + 54, boss.y + 16, 'medium', { baseScale: 0.9, peakScale: 1.35, burstDistance: 56 });
+    this.spawnExplosionFx(boss.x, boss.y, 'small', { baseScale: 0.8, peakScale: 1.0, burstDistance: 42, shards: 6 });
+    this.cameras.main.flash(180, 255, 228, 160);
+    this.playSound('bossExplosion', { volume: 0.32 });
+    this.queueHeavyImpactShake(0.012, 180);
+    this.state.score += options.score ?? 3000;
+    this.syncHud();
+    boss.active = false;
+    if (boss.sprite) boss.sprite.destroy();
+    this.state.boss = null;
+    this.hideBossBar();
+    this.finishGame(true);
   }
 
   spawnPanelCluster(options = {}) {
@@ -1307,8 +1703,11 @@ class MockupLevelScene extends Phaser.Scene {
     this.livesText.setText(this.state.player.lives.toString().padStart(2, '0'));
     this.weaponText.setText(this.state.player.weaponLevel > 1 ? 'PULSE+' : 'PULSE');
     this.weaponTag.setText(this.state.player.weaponLevel > 1 ? 'MK II' : 'MK I');
-    this.stageText.setText(this.sortieIndex === 2 ? '02 / 02' : '01 / 02');
-    if (this.sortieIndex === 2) {
+    this.stageText.setText(STAGE_LABELS[this.sortieIndex - 1] || STAGE_LABELS[0]);
+    if (this.sortieIndex === 3) {
+      this.stageTag.setText(this.state.boss ? 'WARDEN ENGAGED' : this.state.bossQueued ? 'CORE LOCKED' : 'ALTAR LANE');
+      this.stageTag.setColor(this.state.boss || this.state.bossQueued ? '#ffd65a' : '#8ea6cd');
+    } else if (this.sortieIndex === 2) {
       this.stageTag.setText('GRAVEYARD LANE');
       this.stageTag.setColor('#8ea6cd');
     } else {
@@ -1553,6 +1952,7 @@ class MockupLevelScene extends Phaser.Scene {
     this.updateHazardLights(dt);
     this.updateForegroundProps(dt);
     this.updateStageBackdropModules(dt);
+    this.updateAltar(dt);
     this.updateEnvironmentPanels(dt);
     this.updateOverlayMotion(dt);
     this.updateHudEffects(dt);
@@ -1688,6 +2088,11 @@ class MockupLevelScene extends Phaser.Scene {
       return;
     }
 
+    if (boss.kind === 'altarWarden') {
+      this.updateAltarWarden(dt);
+      return;
+    }
+
     boss.y += Math.sin(this.state.time * 1.6) * 55 * dt;
     boss.y = this.clamp(boss.y, 110, GAME_HEIGHT - 110);
     const nextPhase = boss.hp < boss.maxHp * 0.45 ? 2 : 1;
@@ -1725,26 +2130,7 @@ class MockupLevelScene extends Phaser.Scene {
     }
 
     if (boss.hp <= 0) {
-      this.spawnExplosionFx(boss.x, boss.y, 'boss', {
-        baseScale: 1.2,
-        peakScale: 2.35,
-        burstDistance: 96,
-        shards: 14,
-        smokeCount: 5,
-      });
-      this.spawnExplosionFx(boss.x - 50, boss.y - 18, 'medium', { baseScale: 0.9, peakScale: 1.35, burstDistance: 56 });
-      this.spawnExplosionFx(boss.x + 54, boss.y + 16, 'medium', { baseScale: 0.9, peakScale: 1.35, burstDistance: 56 });
-      this.spawnExplosionFx(boss.x, boss.y, 'small', { baseScale: 0.8, peakScale: 1.0, burstDistance: 42, shards: 6 });
-      this.cameras.main.flash(180, 255, 228, 160);
-      this.playSound('bossExplosion', { volume: 0.32 });
-      this.queueHeavyImpactShake(0.012, 180);
-      this.state.score += 3000;
-      this.syncHud();
-      boss.active = false;
-      if (boss.sprite) boss.sprite.destroy();
-      this.state.boss = null;
-      this.hideBossBar();
-      this.finishGame(true);
+      this.defeatBoss(boss);
     }
   }
 
@@ -2026,22 +2412,65 @@ class MockupLevelScene extends Phaser.Scene {
     }
 
     if (this.state.boss && this.state.boss.active) {
-      this.state.boss.sprite.x = this.state.boss.x;
-      this.state.boss.sprite.y = this.state.boss.y;
-      const bossFlash = this.state.boss.hitFlash || 0;
-      const bossPulse = this.state.boss.corePulse || 0;
-      const ratio = Phaser.Math.Clamp(this.state.boss.hp / this.state.boss.maxHp, 0, 1);
-      this.bossBarFill.width = 240 * this.uiState.lastBossRatio;
-      this.bossBarFill.x = 660;
-      this.bossBarGlow.alpha = 0.16 + (1 - ratio) * 0.18 + bossPulse * 0.22;
-      if (bossFlash > 0) this.state.boss.sprite.setTint(0xffffff);
-      else this.state.boss.sprite.clearTint();
-      const { displaySize } = this.assetManifest?.boss || DEFAULT_ASSET_MANIFEST.boss;
-      const pulseScale = 1 + bossPulse * 0.02;
-      this.state.boss.sprite.setDisplaySize(displaySize[0] * pulseScale, displaySize[1] * pulseScale);
-      this.state.boss.hitFlash = Math.max(0, bossFlash - 0.08);
-      this.state.boss.corePulse = Math.max(0, bossPulse - 0.06);
+      const boss = this.state.boss;
+      this.syncBossBar(boss);
+      if (boss.kind === 'altarWarden') {
+        this.renderWarden(boss);
+      } else {
+        boss.sprite.x = boss.x;
+        boss.sprite.y = boss.y;
+        const bossFlash = boss.hitFlash || 0;
+        const bossPulse = boss.corePulse || 0;
+        if (bossFlash > 0) boss.sprite.setTint(0xffffff);
+        else boss.sprite.clearTint();
+        const { displaySize } = this.assetManifest?.boss || DEFAULT_ASSET_MANIFEST.boss;
+        const pulseScale = 1 + bossPulse * 0.02;
+        boss.sprite.setDisplaySize(displaySize[0] * pulseScale, displaySize[1] * pulseScale);
+        boss.hitFlash = Math.max(0, bossFlash - 0.08);
+        boss.corePulse = Math.max(0, bossPulse - 0.06);
+      }
     }
+  }
+
+  // The health plate is shared by both bosses; only the hull below it differs.
+  syncBossBar(boss) {
+    const ratio = Phaser.Math.Clamp(boss.hp / boss.maxHp, 0, 1);
+    this.bossBarFill.width = 240 * this.uiState.lastBossRatio;
+    this.bossBarFill.x = 660;
+    this.bossBarGlow.alpha = 0.16 + (1 - ratio) * 0.18 + (boss.corePulse || 0) * 0.22;
+  }
+
+  // Everything charge-driven on the Warden reads from the one number the
+  // burst timing uses, so the drawn flare and the fired ring cannot drift.
+  renderWarden(boss) {
+    const charge = VoidLancerSolarAltar.chargeRatio(boss.attack);
+    const flash = boss.hitFlash || 0;
+    const pulse = boss.corePulse || 0;
+
+    boss.sprite.x = boss.x;
+    boss.sprite.y = boss.y;
+    boss.sprite.setScale(1 + pulse * 0.02 + charge * 0.03 + flash * 0.02);
+
+    if (boss.hull && typeof boss.hull.setTint === 'function') {
+      if (flash > 0) boss.hull.setTint(0xffffff);
+      else boss.hull.clearTint();
+    }
+
+    boss.core.setAlpha(0.35 + charge * 0.5);
+    boss.core.setScale(1 + charge * 0.3);
+    boss.coreHalo.setAlpha(0.16 + charge * 0.4);
+    boss.coreGlow.setAlpha(0.12 + charge * 0.5);
+    boss.coreGlow.setScale(1 + charge);
+
+    for (const seam of boss.seams) seam.setAlpha(0.3 + charge * 0.6);
+
+    // The telegraph ring only exists while the core is charging: it expands
+    // with the charge and vanishes the frame the ring fires.
+    boss.telegraph.setAlpha(charge > 0 ? 0.3 + charge * 0.6 : 0);
+    boss.telegraph.setScale(0.5 + charge * 1.9);
+
+    boss.hitFlash = Math.max(0, flash - 0.08);
+    boss.corePulse = Math.max(0, pulse - 0.06);
   }
 
   setupHud() {
@@ -2065,7 +2494,11 @@ class MockupLevelScene extends Phaser.Scene {
       .setBlendMode(Phaser.BlendModes.ADD);
 
     const hudTextStyle = { fontFamily: 'Arial', fontSize: '17px', color: '#eef5ff', fontStyle: 'bold' };
-    const hudLabelStyle = { fontFamily: 'Arial', fontSize: '11px', color: '#8ea6cd', letterSpacing: '1px' };
+    // Letter spacing has to be a number: Phaser hands a string straight to the
+    // canvas painter, where '1px' * character count is NaN and the label's
+    // text canvas comes out zero wide - drawn as nothing. Numeric spacing is
+    // what the working Graveyard alert and announcement plates already use.
+    const hudLabelStyle = { fontFamily: 'Arial', fontSize: '11px', color: '#8ea6cd', letterSpacing: 1 };
     this.scoreLabel = this.add.text(42, 17, 'SCORE', hudLabelStyle).setDepth(DEPTH.hud + 2);
     this.scoreText = this.add.text(42, 34, '000000', { fontFamily: 'Arial', fontSize: '24px', color: '#ffffff', fontStyle: 'bold' }).setDepth(DEPTH.hud + 2);
     this.scoreText.setShadow(0, 0, '#000000', 8, false, true);
@@ -2097,7 +2530,7 @@ class MockupLevelScene extends Phaser.Scene {
     this.bossBarFill = this.add.rectangle(660, 104, 0, 16, COLORS.red).setOrigin(0, 0.5).setVisible(false).setDepth(DEPTH.hud + 1);
     this.bossBarBack = this.add.rectangle(782, 104, 244, 16, 0x12070d, 0.85).setOrigin(0.5).setVisible(false).setDepth(DEPTH.hud);
     this.bossBarGlow = this.add.rectangle(780, 104, 242, 20, COLORS.gold, 0.0).setVisible(false).setDepth(DEPTH.hud + 1).setBlendMode(Phaser.BlendModes.ADD);
-    this.bossBarTitle = this.add.text(640, 84, 'SIEGE CARRIER', { fontFamily: 'Arial', fontSize: '12px', color: '#ffd65a', fontStyle: 'bold', letterSpacing: '1px' })
+    this.bossBarTitle = this.add.text(640, 84, 'SIEGE CARRIER', { fontFamily: 'Arial', fontSize: '12px', color: '#ffd65a', fontStyle: 'bold', letterSpacing: 1 })
       .setVisible(false)
       .setDepth(DEPTH.hud + 2);
     this.bossBarText = this.add.text(918, 84, 'LOCKED', { fontFamily: 'Arial', fontSize: '12px', color: '#8ea6cd', fontStyle: 'bold' })
@@ -2151,8 +2584,8 @@ class MockupLevelScene extends Phaser.Scene {
     this.overlayPanel = this.add.image(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'overlayPanel').setDisplaySize(660, 370).setVisible(false).setDepth(DEPTH.overlay + 2);
     this.overlayLogoGlow = this.add.ellipse(GAME_WIDTH / 2, 152, 360, 120, COLORS.cyan, 0.12).setVisible(false).setDepth(DEPTH.overlay + 2).setBlendMode(Phaser.BlendModes.ADD);
     this.overlayLogo = this.add.image(GAME_WIDTH / 2, 148, 'titleLogo').setDisplaySize(372, 102).setVisible(false).setDepth(DEPTH.overlay + 3);
-    this.overlayTag = this.add.text(GAME_WIDTH / 2, 92, '', { fontFamily: 'Arial', fontSize: '12px', color: '#7ae7ff', fontStyle: 'bold', letterSpacing: '2px' }).setOrigin(0.5).setVisible(false).setDepth(DEPTH.overlay + 3);
-    this.overlaySubtitle = this.add.text(GAME_WIDTH / 2, 194, '', { fontFamily: 'Arial', fontSize: '15px', color: '#8ea6cd', letterSpacing: '1px' }).setOrigin(0.5).setVisible(false).setDepth(DEPTH.overlay + 3);
+    this.overlayTag = this.add.text(GAME_WIDTH / 2, 92, '', { fontFamily: 'Arial', fontSize: '12px', color: '#7ae7ff', fontStyle: 'bold', letterSpacing: 2 }).setOrigin(0.5).setVisible(false).setDepth(DEPTH.overlay + 3);
+    this.overlaySubtitle = this.add.text(GAME_WIDTH / 2, 194, '', { fontFamily: 'Arial', fontSize: '15px', color: '#8ea6cd', letterSpacing: 1 }).setOrigin(0.5).setVisible(false).setDepth(DEPTH.overlay + 3);
     this.overlayTitle = this.add.text(GAME_WIDTH / 2, 232, '', { fontFamily: 'Arial', fontSize: '34px', color: '#eef5ff', fontStyle: 'bold' }).setOrigin(0.5).setVisible(false).setDepth(DEPTH.overlay + 3);
     this.overlaySummary = this.add.text(GAME_WIDTH / 2, 282, '', {
       fontFamily: 'Arial',
@@ -2562,7 +2995,11 @@ class MockupLevelScene extends Phaser.Scene {
       triggered: false,
     }));
 
-    const layout = this.sortieIndex === 2 ? GRAVEYARD_STAGE_MODULE_LAYOUT : STAGE_BACKGROUND_MODULE_LAYOUT;
+    const layout = this.sortieIndex === 3
+      ? ALTAR_STAGE_MODULE_LAYOUT
+      : this.sortieIndex === 2
+        ? GRAVEYARD_STAGE_MODULE_LAYOUT
+        : STAGE_BACKGROUND_MODULE_LAYOUT;
     for (const def of layout) {
       this.spawnStageBackdropModule(def.kind, def.x, def.y, def);
     }

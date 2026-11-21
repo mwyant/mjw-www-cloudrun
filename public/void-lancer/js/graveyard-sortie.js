@@ -17,14 +17,16 @@ const VoidLancerGraveyard = (() => {
 
   const SIREN_RISE = 1.9;
 
-  // Safe preview shortcut: ?sortie=2 opens the Graveyard briefing directly.
-  // Anything else, including a malformed query, stays on the First Sortie.
+  // Safe preview shortcut: ?sortie=2 opens the Graveyard briefing and
+  // ?sortie=3 the Solar Altar. Anything else, including a malformed query,
+  // stays on the First Sortie.
   function readSortieIndex(search) {
     if (typeof search !== 'string' || search === '') return 1;
     try {
       const flag = new URLSearchParams(search).get('sortie');
       if (flag == null) return 1;
       const value = String(flag).trim().toLowerCase();
+      if (value === '3' || value === 'altar' || value === 'solar' || value === 'solar-altar') return 3;
       return value === '2' || value === 'graveyard' ? 2 : 1;
     } catch (error) {
       return 1;

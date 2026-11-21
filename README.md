@@ -111,9 +111,9 @@ python3 -m http.server 8772 --bind "${LAN_IP:?Set LAN_IP first}" --directory pub
 ```
 
 Then on the phone open `http://<LAN-IP>:8772/void-lancer/`, adding
-`?sortie=2` to land on the Graveyard Sortie briefing directly. There is no
-build step: to restart the preview, stop the server and run the same command
-again.
+`?sortie=2` to land on the Graveyard Sortie briefing directly or `?sortie=3`
+for the Solar Altar. There is no build step: to restart the preview, stop the
+server and run the same command again.
 
 Targeted test for this work: `node --test scripts/void-lancer-controls.test.cjs`.
 
@@ -137,6 +137,47 @@ transparent salvager cutout in the `imr-pilot` design batch. The 1008×567 lane
 image pans within its edges rather than repeating; its center is dimmed behind
 gameplay. The salvager keeps its open grapple and cargo gap and uses a separate
 hooded lamp aligned to the lookout cone.
+
+### Solar Altar Sortie
+
+Clear the Graveyard to continue the chain into the Solar Altar, or open
+`/void-lancer/?sortie=3` to practice it directly. The lane is bounded: it stops
+spawning after its last wave and queues the Altar Warden behind that wave, so
+there is no mission clock — clearing the run means breaking the Warden.
+
+The Warden holds station in front of the altar and telegraphs every radial burst:
+the ember core flares and a ring expands for a full beat before the ring leaves
+the core. Below half hull the core overdrives — a shorter charge, a wider ring,
+and every gap moved. Breaking it closes the run on the garden-world payoff and
+offers **Replay the Run**, which starts the chain over from the First Sortie with
+the score reset. Dying in the lane retries the lane with the run score intact.
+
+The two frames are derived from the `imr-pilot` candidates rather than
+generated: the lane downsampled to a non-tiling 1008×567 frame, and the hull
+flood-filled out of its light field, trimmed and re-centred on the furnace eye
+so the overlays land on the core. Both load through the existing `preload()`
+hook:
+
+```js
+this.load.image('bgAltarLane', 'void_lancer_pack/bg_altar_lane_1.webp');
+this.load.image('altarWarden', 'void_lancer_pack/altar_warden_1.webp');
+```
+
+The lane frame pans inside its own edges and never repeats, exactly like the
+Graveyard backdrop, so the quiet centre band stays quiet under the fight.
+`buildAltarBackdrop()` and `buildWardenSprite()` pick the textures up on their
+own; the procedural rings, ember pools, repair faces and hull stay behind as the
+fallback for a frame that is not in the pack, and the two layers are never drawn
+together. The additive ember core, seam glow and telegraph ring stay on top of
+whichever hull is loaded, so the charge reads the same either way, and nothing
+else in the scene draws the Warden.
+
+No new music: the fight reuses the existing `bossWarning` and `enemyFire`
+presets. The lane's waves and banners live in `level3_stage_data.js`; the
+telegraph timing and ring pattern live in the pure `VoidLancerSolarAltar`
+module (`solar-altar.js`), which the scene only draws from.
+
+Targeted test for this work: `node --test scripts/void-lancer-solar-altar.test.cjs`.
 
 ## Production Deployment
 Production deployment is handled by Cloud Run's connected repository

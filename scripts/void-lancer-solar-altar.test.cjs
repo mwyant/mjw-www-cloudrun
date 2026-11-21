@@ -10,6 +10,7 @@ const MODULES = [
   'level1_stage_data.js',
   'level2_stage_data.js',
   'level3_stage_data.js',
+  'arcade_stage_data.js',
   'graveyard-sortie.js',
   'solar-altar.js',
   'main.js',
@@ -256,7 +257,7 @@ test('the ?sortie=3 preview opens the Solar Altar briefing and anything else sta
   }
 });
 
-test('the chain runs First Sortie -> Graveyard -> Solar Altar -> replay', () => {
+test('the chain runs First Sortie -> Graveyard -> nine arcade sorties -> Solar Altar -> replay', () => {
   const r = runtime();
   r.boot();
   r.scene.state.score = 1200;
@@ -271,22 +272,40 @@ test('the chain runs First Sortie -> Graveyard -> Solar Altar -> replay', () => 
 
   r.scene.state.score = 1900;
   r.scene.finishGame(true);
-  assert.equal(r.overlay().button, 'Continue to Solar Altar');
-  assert.equal(r.overlay().tag, 'Two of Three Clear');
-  r.scene.startGame();
-  assert.equal(r.scene.sortieIndex, 3);
-  assert.equal(r.scene.state.mode, 'intro');
-  assert.equal(r.overlay().title, 'Solar Altar');
-  assert.equal(r.overlay().button, 'Start Sortie');
-  assert.equal(r.scene.state.score, 1900, 'the run score carries into the Solar Altar');
+  assert.equal(r.overlay().button, 'Continue to Split Lane', 'the yard hands over to the first arcade sortie');
+  assert.equal(r.overlay().tag, 'Two of Twelve Clear');
 
-  r.scene.startGame();
-  assert.equal(r.scene.state.mode, 'playing');
-  assert.equal(r.scene.sortieIndex, 3);
-  assert.equal(r.scene.state.score, 1900);
+  // Graveyard -> nine arcade sorties -> Solar Altar: every hand-off stops on
+  // the next briefing, and the run score rides along the whole way.
+  const walked = [];
+  while (r.scene.campaignEntry().kind !== 'altar') {
+    r.scene.startGame();
+    const entry = r.scene.campaignEntry();
+    walked.push(entry.id);
+    assert.equal(r.overlay().title, entry.kind === 'first' ? 'Launch Window Open' : entry.title,
+      `${entry.id} stops on its own briefing`);
+    assert.equal(r.overlay().button, 'Start Sortie');
+    assert.equal(r.scene.state.mode, 'intro', 'nothing starts until the overlay action is pressed');
 
-  r.scene.state.score = 2400;
-  r.scene.finishGame(true);
+    r.scene.startGame();
+    assert.equal(r.scene.state.mode, 'playing');
+    assert.equal(r.scene.state.score, 1900 + (walked.length - 1) * 100, 'the run score carries through the block');
+    r.scene.state.score += 100;
+    r.scene.finishGame(true);
+  }
+  assert.deepEqual(walked, [
+    'escalation-01',
+    'escalation-02',
+    'escalation-03',
+    'escalation-04-drone-relay',
+    'escalation-06-crossing-picket',
+    'escalation-05-high-low-battery',
+    'escalation-8-shifting-lanes',
+    'escalation-7-turret-line',
+    'escalation-9-final-proof',
+    'solar-altar',
+  ], 'the arcade block runs in provisionalOrder between the yard and the finale');
+
   assert.equal(r.overlay().button, 'Replay the Run');
   assert.equal(r.overlay().tag, 'Campaign Clear');
   r.scene.startGame();

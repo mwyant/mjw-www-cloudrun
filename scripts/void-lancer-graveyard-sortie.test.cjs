@@ -6,7 +6,7 @@ const { runInNewContext } = require('node:vm');
 
 const jsDir = join(__dirname, '../public/void-lancer/js');
 // Same order as index.html: stage data, then the graveyard module, then the game.
-const MODULES = ['level1_stage_data.js', 'level2_stage_data.js', 'graveyard-sortie.js', 'main.js'];
+const MODULES = ['level1_stage_data.js', 'level2_stage_data.js', 'arcade_stage_data.js', 'graveyard-sortie.js', 'main.js'];
 
 function loadModules() {
   const sandbox = {
@@ -272,19 +272,21 @@ test('dying in the Graveyard retries only the Graveyard, clearing it continues t
 
   r.scene.state.score = 1900;
   r.scene.finishGame(true);
-  assert.equal(r.overlay().button, 'Continue to Solar Altar');
-  assert.equal(r.overlay().tag, 'Two of Three Clear');
+  assert.equal(r.overlay().button, 'Continue to Split Lane');
+  assert.equal(r.overlay().tag, 'Two of Twelve Clear');
   assert.equal(r.overlay().title, 'Graveyard Secured', 'the intermediate debrief never reads as a finish line');
 
   r.scene.startGame();
-  assert.equal(r.scene.sortieIndex, 3, 'a cleared Graveyard offers the Solar Altar next');
+  assert.equal(r.scene.sortieIndex, 0, 'an arcade route carries no authored sortie index');
+  assert.equal(r.scene.arcadeStageId, 'escalation-01', 'a cleared Graveyard offers the first arcade sortie');
   assert.equal(r.scene.state.mode, 'intro');
-  assert.equal(r.overlay().title, 'Solar Altar');
+  assert.equal(r.overlay().title, 'Split Lane');
   assert.equal(r.overlay().button, 'Start Sortie');
-  assert.equal(r.scene.state.score, 1900, 'the run score carries into the third lane');
+  assert.equal(r.scene.state.score, 1900, 'the run score carries into the arcade block');
+  assert.equal(r.scene.campaignEntry().displayIndex, 3, 'the first arcade sortie is stage 3 of 12');
 
   r.scene.startGame();
-  assert.equal(r.scene.sortieIndex, 3);
+  assert.equal(r.scene.arcadeStageId, 'escalation-01');
   assert.equal(r.scene.state.mode, 'playing');
 });
 
@@ -348,23 +350,24 @@ function withHud(scene) {
   return { stageText, stageTag };
 }
 
-test('the HUD stage counter follows the active sortie', () => {
+test('the HUD stage counter follows the active sortie across the twelve-stage chain', () => {
   const r = runtime();
   const { stageText, stageTag } = withHud(r.scene);
 
   r.scene.sortieIndex = 1;
   r.scene.syncHud();
-  assert.equal(stageText.value, '01 / 03');
+  assert.equal(stageText.value, '01 / 12');
   assert.equal(stageTag.value, 'OPENING LANE');
 
   r.scene.sortieIndex = 2;
   r.scene.syncHud();
-  assert.equal(stageText.value, '02 / 03');
+  assert.equal(stageText.value, '02 / 12');
   assert.equal(stageTag.value, 'GRAVEYARD LANE');
 
+  // Routing identity 3 is still the Solar Altar; only its display slot moved.
   r.scene.sortieIndex = 3;
   r.scene.syncHud();
-  assert.equal(stageText.value, '03 / 03');
+  assert.equal(stageText.value, '12 / 12');
   assert.equal(stageTag.value, 'ALTAR LANE');
 });
 
@@ -646,7 +649,7 @@ function prepareLaneLoop(scene) {
   }
 }
 
-test('the run ends on the Graveyard timer and offers the Solar Altar', () => {
+test('the run ends on the Graveyard timer and offers the first arcade sortie', () => {
   const r = graveyardScene();
   const scene = r.scene;
   // Keep the crossing clean: the Lancer stays outside the worklight cone.
@@ -661,7 +664,7 @@ test('the run ends on the Graveyard timer and offers the Solar Altar', () => {
   }
 
   assert.equal(scene.state.mode, 'victory');
-  assert.equal(r.overlay().button, 'Continue to Solar Altar');
+  assert.equal(r.overlay().button, 'Continue to Split Lane');
   assert.ok(scene.state.time <= 30.1, `the lane cleared at ${scene.state.time.toFixed(1)}s`);
   assert.equal(r.sounds.length, 0, 'a clean crossing stays quiet');
 });
@@ -798,9 +801,12 @@ test('the Level 2 copy names the objective, both parties and the Solar Altar wit
 
   assert.match(won.summary, /route record/i);
   assert.match(won.summary, /amber markers/i);
-  assert.match(won.summary, /Solar Altar/, 'the payoff names the next stop instead of "past this yard"');
-  assert.equal(won.button, 'Continue to Solar Altar');
-  assert.equal(won.tag, 'Two of Three Clear');
+  assert.match(won.summary, /through the defense lanes to the Solar Altar/i,
+    'the payoff names the altar as the finale the arcade block leads to, not as the next stop');
+  assert.ok(!/Next stop: the Solar Altar/i.test(won.summary),
+    'the intermediate debrief never points at the final battle as what comes next');
+  assert.equal(won.button, 'Continue to Split Lane', 'the button offers the leg that actually follows the yard');
+  assert.equal(won.tag, 'Two of Twelve Clear');
   assert.equal(won.title, 'Graveyard Secured');
   assert.ok(won.summary.length <= 170, `the debrief wraps to three lines (${won.summary.length} chars)`);
 

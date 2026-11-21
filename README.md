@@ -112,7 +112,8 @@ python3 -m http.server 8772 --bind "${LAN_IP:?Set LAN_IP first}" --directory pub
 
 Then on the phone open `http://<LAN-IP>:8772/void-lancer/`, adding
 `?sortie=2` to land on the Graveyard Sortie briefing directly or `?sortie=3`
-for the Solar Altar. There is no build step: to restart the preview, stop the
+for the Solar Altar (an arcade stage id such as `?sortie=escalation-01` works
+the same way). There is no build step: to restart the preview, stop the
 server and run the same command again.
 
 Targeted test for this work: `node --test scripts/void-lancer-controls.test.cjs`.
@@ -130,7 +131,10 @@ Defeat the Siege Carrier and choose **Continue to Graveyard**, or open
 `/void-lancer/?sortie=2` to practice the lane directly. Break contact when the
 salvager's worklight sweeps over your ship. Sustained contact alerts the Imperial
 patrol already in the yard; the workboat itself never fires. The amber salvage
-tags are scenery, not pickups or objectives to collect.
+tags are scenery, not pickups or objectives to collect. Clearing the crossing
+continues to the first arcade sortie; the debrief says how many arcade sorties
+stand between the yard and the Solar Altar, because the altar is the finale and
+not the next stop.
 
 The Level 2 runtime WebPs are derived from the Graveyard lane illustration and
 transparent salvager cutout in the `imr-pilot` design batch. The 1008×567 lane
@@ -138,11 +142,62 @@ image pans within its edges rather than repeating; its center is dimmed behind
 gameplay. The salvager keeps its open grapple and cargo gap and uses a separate
 hooded lamp aligned to the lookout cone.
 
+### Arcade sorties
+
+The campaign is twelve stages, and the HUD counter counts display order while
+`?sortie=` keeps routing by identity. The chain is First Sortie (01 / 12),
+Graveyard (02 / 12), the nine arcade sorties (03 / 12 - 11 / 12) in
+`arcade_stage_data.js` `provisionalOrder`, and the Solar Altar finale
+(12 / 12).
+
+Every arcade stage has a stable practice URL keyed by its stage id:
+
+| Slot | URL suffix | Stage | Clears at |
+|------|------------|-------|-----------|
+| 03 / 12 | `?sortie=escalation-01` | Split Lane | 30s |
+| 04 / 12 | `?sortie=escalation-02` | The Crossing | 32s |
+| 05 / 12 | `?sortie=escalation-03` | Gun Line | 34s |
+| 06 / 12 | `?sortie=escalation-04-drone-relay` | Relay Run | 33s |
+| 07 / 12 | `?sortie=escalation-06-crossing-picket` | Crossing Picket | 36s |
+| 08 / 12 | `?sortie=escalation-05-high-low-battery` | High-Low Battery | 35s |
+| 09 / 12 | `?sortie=escalation-8-shifting-lanes` | Shifting Lanes | 38s |
+| 10 / 12 | `?sortie=escalation-7-turret-line` | Turret Line | 36s |
+| 11 / 12 | `?sortie=escalation-9-final-proof` | Final Proof | 41s |
+
+So `/void-lancer/?sortie=escalation-01` opens the Split Lane briefing with the
+counter reading 03 / 12. The id is the route, so re-sequencing difficulty is an
+edit to `provisionalOrder` only: stage records, ids and these URLs never move.
+An unrecognised `?sortie=` value still falls back to the First Sortie.
+
+Routing identity and display order stay apart on purpose. `?sortie=2` (or
+`graveyard`), `?sortie=3` (or `altar`, `solar`, `solar-altar`) and no query at
+all keep their old meanings, so the finale practice link still opens the Solar
+Altar after it moved to slot 12, and the counter reads 12 / 12 while it does.
+
+An arcade stage has no boss: it clears on its `missionDuration` when the clock
+runs out, and losing hull before then is still a loss. The debrief continues to
+the entry that follows it, the last arcade stage continues to the Solar Altar,
+and the finale offers **Replay the Run**, which starts the chain over from the
+First Sortie with the score reset. Dying in a stage retries that stage with the
+run score intact, exactly like the authored lanes.
+
+The briefing overlay shows the stage's authored `briefing` - objective first,
+one read the lane is built on, capped at 170 characters so it wraps to three
+lines - then the clock, then the shared controls line. No new narrative hooks,
+art, audio or enemy behaviour come with the wiring: the lanes use the existing
+scout, zigzag, turret and drone sprites, the existing announcement plate, the
+existing sound presets and the standard First Sortie parallax layout.
+
+Targeted test for this work:
+`node --test scripts/void-lancer-arcade-campaign.test.cjs`.
+
 ### Solar Altar Sortie
 
-Clear the Graveyard to continue the chain into the Solar Altar, or open
-`/void-lancer/?sortie=3` to practice it directly. The lane is bounded: it stops
-spawning after its last wave and queues the Altar Warden behind that wave, so
+Clear the Graveyard and the nine arcade sorties to continue the chain into the
+Solar Altar, or open `/void-lancer/?sortie=3` to practice it directly: the alias
+is routing identity, so it still opens the finale now that the finale displays
+as stage 12 of 12. The lane is bounded: it stops spawning after its last wave
+and queues the Altar Warden behind that wave, so
 there is no mission clock — clearing the run means breaking the Warden.
 
 The Warden holds station in front of the altar and telegraphs every radial burst:

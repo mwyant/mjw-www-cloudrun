@@ -12,6 +12,13 @@ function runtime() {
     captured = new Set();
     attributes = new Map();
     dataset = {};
+    style = {
+      values: {},
+      setProperty(name, value) { this.values[name] = String(value); },
+      getPropertyValue(name) { return this.values[name] ?? ''; },
+      removeProperty(name) { delete this.values[name]; },
+    };
+    rect = { left: 0, right: 100, top: 0, bottom: 100, width: 100, height: 100 };
 
     send(type, props) {
       const event = Object.assign(new Event(type, { cancelable: true }), props);
@@ -22,16 +29,32 @@ function runtime() {
     setPointerCapture(id) { this.captured.add(id); }
     hasPointerCapture(id) { return this.captured.has(id); }
     releasePointerCapture(id) { this.captured.delete(id); }
-    getBoundingClientRect() { return { left: 0, right: 100, top: 0, bottom: 100, width: 100, height: 100 }; }
+    getBoundingClientRect() { return this.rect; }
     setAttribute(name, value) { this.attributes.set(name, value); }
     removeAttribute(name) { this.attributes.delete(name); }
     toggleAttribute(name, force) { force ? this.setAttribute(name, '') : this.removeAttribute(name); }
   }
   const playfield = new Target();
-  const [pad, fire, start] = [new Target(), new Target(), new Target()];
-  const elements = { '#touchPad': pad, '#touchFire': fire, '#touchStart': start };
+  const [pad, fire, start, stick] = [new Target(), new Target(), new Target(), new Target()];
+  const elements = {
+    '#touchPad': pad, '#touchFire': fire, '#touchStart': start, '#touchStick': stick,
+  };
   playfield.querySelector = (selector) => elements[selector];
   const window = new Target();
+  const mediaQueries = [];
+  window.matchMedia = (media) => {
+    const listeners = new Set();
+    const query = {
+      media,
+      matches: false,
+      addEventListener: (_type, listener) => listeners.add(listener),
+      removeEventListener: (_type, listener) => listeners.delete(listener),
+      change: () => listeners.forEach((listener) => listener({ matches: query.matches, media })),
+      listeners: () => listeners.size,
+    };
+    mediaQueries.push(query);
+    return query;
+  };
   const document = Object.assign(new Target(), {
     hidden: false,
     getElementById: (id) => id === 'playfield' ? playfield : new Target(),
@@ -64,7 +87,8 @@ function runtime() {
   scene.showIntro();
   const key = (type, code, props) => document.send(type, { code, ...props });
   return {
-    window, document, scene, api: window.voidLancerControls, playfield, pad, fire, start,
+    window, document, scene, api: window.voidLancerControls, playfield, pad, fire, start, stick,
+    media: () => mediaQueries[0],
     pointer: (target, type, pointerId, clientX = 50, clientY = 50) =>
       target.send(type, { pointerId, clientX, clientY, button: 0, pointerType: 'touch' }),
     starts: () => starts,
@@ -327,4 +351,129 @@ test('Start/Restart require fresh activation and never replay a held fire or pad
   assert.equal(r.starts(), 2);
   pointer(pad, 'pointermove', 4, 10, 50);
   assert.equal(held('moveLeft') || held('fire'), false);
+});
+
+test('the landscape stick opens under the thumb, aims like the pad and keeps its own source', () => {
+  const r = runtime();
+  const { pointer, stick, fire, held, scene } = r;
+  scene.startGame();
+  assert.equal(stick.attributes.get('aria-disabled'), 'false');
+
+  // Pressing on the zone border steers from that press point, so a stationary
+  // thumb never moves the ship; only the drawn ring is clamped inwards.
+  assert.equal(pointer(stick, 'pointerdown', 1, 10, 10), true);
+  assert.equal(stick.attributes.has('data-active'), true);
+  assert.equal(stick.style.getPropertyValue('--stick-ox'), '46px', 'the ring stays inside the zone');
+  assert.equal(stick.style.getPropertyValue('--stick-kx'), '0.0px');
+  assert.equal(held('moveUp') || held('moveDown') || held('moveLeft') || held('moveRight'), false,
+    'a stationary thumb near the edge does not steer');
+  assert.ok(stick.hasPointerCapture(1));
+
+  // The drag is measured from the press point, not from the clamped ring.
+  pointer(stick, 'pointermove', 1, 60, 10);
+  assert.ok(held('moveRight'));
+  assert.equal(held('moveUp') || held('moveDown'), false);
+  pointer(stick, 'pointermove', 1, 14, 10);
+  assert.equal(held('moveRight'), false, 'a nudge inside the deadzone does not steer');
+  pointer(stick, 'pointermove', 1, 60, 60);
+  assert.ok(held('moveRight') && held('moveDown'), 'a diagonal holds both axes');
+  pointer(stick, 'pointermove', 1, 60, 10);
+  assert.ok(held('moveRight') && !held('moveDown'));
+
+  // One floating stick, one origin: a second thumb on it changes nothing.
+  assert.equal(pointer(stick, 'pointerdown', 2, 10, 90), false);
+  pointer(stick, 'pointermove', 2, 90, 10);
+  assert.ok(held('moveRight') && !held('moveLeft') && !held('moveUp'));
+
+  // Fire rides its own captured source next to the stick.
+  assert.equal(pointer(fire, 'pointerdown', 3), true);
+  assert.ok(held('fire'));
+  pointer(stick, 'pointerup', 1);
+  assert.equal(held('moveRight'), false, 'releasing the stick leaves fire held');
+  assert.ok(held('fire'));
+  assert.equal(stick.attributes.has('data-active'), false);
+  assert.equal(stick.style.getPropertyValue('--stick-kx'), '', 'the knob returns to rest');
+  pointer(fire, 'pointerup', 3);
+  assert.equal(held('fire'), false);
+});
+
+test('a stationary thumb on either border of the stick zone never steers', () => {
+  const r = runtime();
+  const { pointer, stick, held, scene } = r;
+  scene.startGame();
+  const steering = () => held('moveUp') || held('moveDown') || held('moveLeft') || held('moveRight');
+
+  // Near border: the ring is drawn inwards, but the aim starts at the press.
+  pointer(stick, 'pointerdown', 1, 10, 10);
+  assert.equal(stick.style.getPropertyValue('--stick-ox'), '46px');
+  assert.equal(steering(), false, 'a stationary thumb on the near border does not steer');
+  pointer(stick, 'pointermove', 1, 60, 10); // 50px right of the press point
+  assert.ok(held('moveRight'));
+  pointer(stick, 'pointerup', 1);
+  assert.equal(steering(), false);
+
+  // Far border: the ring is drawn at 54,54 while the aim starts at 90,90, so
+  // the drag reads as a left move instead of a dead nudge around the ring.
+  pointer(stick, 'pointerdown', 2, 90, 90);
+  assert.equal(stick.style.getPropertyValue('--stick-ox'), '54px');
+  assert.equal(stick.style.getPropertyValue('--stick-kx'), '0.0px');
+  assert.equal(steering(), false, 'a stationary thumb on the far border does not steer');
+  pointer(stick, 'pointermove', 2, 60, 90);
+  assert.ok(held('moveLeft') && !held('moveRight'), 'the drag is measured from the press point');
+  pointer(stick, 'pointerup', 2);
+  assert.equal(steering(), false);
+});
+
+test('the landscape stick stays inert on overlays while the start action stays reachable', () => {
+  const r = runtime();
+  const { pointer, stick, fire, start, held, scene } = r;
+  // Intro overlay: the stick is announced as disabled and captures nothing.
+  assert.equal(stick.attributes.get('aria-disabled'), 'true');
+  assert.equal(pointer(stick, 'pointerdown', 1, 90, 46), false);
+  assert.equal(pointer(fire, 'pointerdown', 2), false);
+  assert.equal(held('moveRight') || held('fire'), false);
+
+  // A fresh press on the overlay button starts the run, as in portrait.
+  pointer(start, 'pointerdown', 3);
+  pointer(start, 'pointerup', 3, 50, 50);
+  assert.equal(r.starts(), 1);
+  assert.equal(stick.attributes.get('aria-disabled'), 'false');
+  assert.equal(pointer(stick, 'pointerdown', 4, 46, 46), true);
+  pointer(stick, 'pointermove', 4, 90, 46);
+  assert.ok(held('moveRight'));
+});
+
+test('a layout switch or a resize that drops a captured control releases it without replay', () => {
+  const r = runtime();
+  const { pointer, stick, fire, held, media, scene } = r;
+  scene.startGame();
+
+  pointer(stick, 'pointerdown', 1, 46, 46);
+  pointer(stick, 'pointermove', 1, 90, 46);
+  pointer(fire, 'pointerdown', 2);
+  assert.ok(held('moveRight') && held('fire'));
+
+  // Rotating swaps the landscape stick for the portrait pad: let every thumb go.
+  media().change();
+  assert.equal(held('moveRight') || held('fire'), false);
+  assert.equal(stick.hasPointerCapture(1) || fire.hasPointerCapture(2), false);
+  pointer(stick, 'pointermove', 1, 10, 46);
+  pointer(fire, 'pointerup', 2);
+  assert.equal(held('moveRight') || held('fire'), false, 'late events replay nothing');
+
+  // A resize that only moves things keeps the capture...
+  pointer(stick, 'pointerdown', 3, 46, 46);
+  pointer(stick, 'pointermove', 3, 90, 46);
+  r.window.send('resize');
+  assert.ok(held('moveRight'));
+
+  // ...one that takes the control out of the layout must not strand it.
+  stick.rect = { left: 0, right: 0, top: 0, bottom: 0, width: 0, height: 0 };
+  r.window.send('resize');
+  assert.equal(held('moveRight'), false);
+  assert.equal(stick.hasPointerCapture(3), false);
+
+  // Teardown takes the layout listeners with it.
+  scene.events.emit('shutdown');
+  assert.equal(media().listeners(), 0);
 });

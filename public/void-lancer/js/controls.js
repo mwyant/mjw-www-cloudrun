@@ -173,12 +173,18 @@ const VoidLancerInput = (() => {
     };
   }
 
-  function attachTouch(playfield, actions, getContext) {
+  function attachTouch(playfield, actions, getContext, view) {
     const pad = playfield.querySelector('#touchPad');
     const fire = playfield.querySelector('#touchFire');
     const start = playfield.querySelector('#touchStart');
+    const stick = playfield.querySelector('#touchStick');
     const pointers = new Map();
-    const controls = [pad, fire, start];
+    const controls = [pad, fire, start, stick].filter(Boolean);
+    // Half of .landscape-stick-ring (92px), mirrored in the stylesheet: how far
+    // the thumb travels inside the floating zone before the knob stops.
+    const stickReach = 46;
+    // Deadzone in units of half a control, shared by the pad and the stick.
+    const deadzone = 0.13;
 
     function updateFeedback() {
       const held = new Set([...pointers.values()].flatMap((pointer) => pointer.held));
@@ -197,17 +203,83 @@ const VoidLancerInput = (() => {
       updateFeedback();
     }
 
-    function aim(event, pointer) {
-      const rect = pad.getBoundingClientRect();
-      const x = (event.clientX - rect.left) / rect.width - 0.5;
-      const y = (event.clientY - rect.top) / rect.height - 0.5;
+    function applyAim(pointer, x, y) {
       const next = [];
-      if (Math.hypot(x, y) >= 0.13) {
+      if (Math.hypot(x, y) >= deadzone) {
         const diagonal = Math.SQRT2 - 1; // tan(22.5°), the edge of each 45° sector
         if (Math.abs(x) > Math.abs(y) * diagonal) next.push(x < 0 ? 'moveLeft' : 'moveRight');
         if (Math.abs(y) > Math.abs(x) * diagonal) next.push(y < 0 ? 'moveUp' : 'moveDown');
       }
       setHeld(pointer, next);
+    }
+
+    function aim(event, pointer) {
+      const rect = pad.getBoundingClientRect();
+      applyAim(pointer, (event.clientX - rect.left) / rect.width - 0.5,
+        (event.clientY - rect.top) / rect.height - 0.5);
+    }
+
+    // The landscape stick floats: the ring opens where the thumb landed, so aim
+    // is always measured from that press point. The ring's drawn origin is
+    // clamped separately, purely so it stays inside the zone (and therefore
+    // clear of the OS edges) when the thumb lands on a border.
+    function aimStick(event, pointer) {
+      const rect = stick.getBoundingClientRect();
+      const dx = event.clientX - rect.left - pointer.origin.x;
+      const dy = event.clientY - rect.top - pointer.origin.y;
+      const scale = stickReach / Math.max(Math.hypot(dx, dy), stickReach);
+      stick.style.setProperty('--stick-ox', `${clampTo(pointer.origin.x, stickReach, rect.width - stickReach)}px`);
+      stick.style.setProperty('--stick-oy', `${clampTo(pointer.origin.y, stickReach, rect.height - stickReach)}px`);
+      stick.style.setProperty('--stick-kx', `${(dx * scale).toFixed(1)}px`);
+      stick.style.setProperty('--stick-ky', `${(dy * scale).toFixed(1)}px`);
+      applyAim(pointer, dx / (stickReach * 2), dy / (stickReach * 2));
+    }
+
+    function clampTo(value, min, max) {
+      return Math.min(Math.max(value, min), Math.max(max, min));
+    }
+
+    function restStick() {
+      for (const name of ['--stick-ox', '--stick-oy', '--stick-kx', '--stick-ky']) {
+        stick.style.removeProperty(name);
+      }
+      stick.toggleAttribute('data-active', false);
+    }
+
+    function stickBusy() {
+      for (const pointer of pointers.values()) if (pointer.control === stick) return true;
+      return false;
+    }
+
+    function onStickDown(event) {
+      if (event.button !== 0 || pointers.has(event.pointerId) || stickBusy()
+        || getContext() !== 'play') return;
+      event.preventDefault();
+      stick.setPointerCapture(event.pointerId);
+      const rect = stick.getBoundingClientRect();
+      const pointer = {
+        control: stick,
+        source: Symbol(),
+        held: [],
+        // The press point itself, never a clamped stand-in: a stationary thumb
+        // produces a zero delta wherever it lands, so pressing near an edge
+        // cannot steer, and later drags stay true to the thumb. The zone's own
+        // inset from the safe viewport is the margin at the OS edges.
+        origin: {
+          x: event.clientX - rect.left,
+          y: event.clientY - rect.top,
+        },
+      };
+      pointers.set(event.pointerId, pointer);
+      stick.toggleAttribute('data-active', true);
+      aimStick(event, pointer);
+    }
+
+    function onStickMove(event) {
+      const pointer = pointers.get(event.pointerId);
+      if (pointer?.control === stick && event.currentTarget === stick && getContext() === 'play') {
+        aimStick(event, pointer);
+      }
     }
 
     function onDown(event) {
@@ -232,7 +304,21 @@ const VoidLancerInput = (() => {
       if (!pointer) return;
       pointers.delete(id);
       setHeld(pointer, []);
+      if (pointer.control === stick) restStick();
       if (pointer.control.hasPointerCapture(id)) pointer.control.releasePointerCapture(id);
+    }
+
+    function releaseAll() {
+      for (const id of [...pointers.keys()]) release(id);
+    }
+
+    // A resize can take a captured control out of the layout before any
+    // pointer event reaches it; drop those captures so nothing stays held.
+    function releaseStale() {
+      for (const [id, pointer] of [...pointers]) {
+        const rect = pointer.control.getBoundingClientRect();
+        if (!rect.width || !rect.height) release(id);
+      }
     }
 
     function onEnd(event) {
@@ -252,17 +338,31 @@ const VoidLancerInput = (() => {
       if (event.detail === 0 && getContext() === 'overlay') actions.requestStart();
     }
 
-    const unsubscribe = actions.onClear(() => {
-      for (const id of pointers.keys()) release(id);
-    });
+    const unsubscribe = actions.onClear(releaseAll);
     const listeners = [
       ['pointerdown', onDown], ['pointermove', onMove], ['pointerup', onEnd],
       ['pointercancel', onEnd], ['lostpointercapture', onEnd],
     ];
+    const stickListeners = [
+      ['pointerdown', onStickDown], ['pointermove', onStickMove], ['pointerup', onEnd],
+      ['pointercancel', onEnd], ['lostpointercapture', onEnd],
+    ];
     for (const control of controls) {
-      for (const [type, listener] of listeners) control.addEventListener(type, listener);
+      for (const [type, listener] of control === stick ? stickListeners : listeners) {
+        control.addEventListener(type, listener);
+      }
     }
     start.addEventListener('click', onStartClick);
+    // Rotating or resizing swaps the portrait pad for the landscape stick while
+    // thumbs may still be captured, so the layout listeners let go of them.
+    // The query mirrors the landscape block in index.html.
+    const layoutQuery = typeof view?.matchMedia === 'function'
+      ? view.matchMedia('(any-pointer: coarse) and (orientation: landscape) and (max-height: 600px)')
+      : null;
+    if (typeof layoutQuery?.addEventListener === 'function') {
+      layoutQuery.addEventListener('change', releaseAll);
+    }
+    view?.addEventListener('resize', releaseStale);
     playfield.setAttribute('data-touch-ready', '');
 
     return {
@@ -271,14 +371,21 @@ const VoidLancerInput = (() => {
         fire.hidden = Boolean(label);
         if (label) start.textContent = label;
         pad.setAttribute('aria-disabled', String(Boolean(label)));
+        stick?.setAttribute('aria-disabled', String(Boolean(label)));
       },
       destroy() {
         unsubscribe();
         for (const id of pointers.keys()) release(id);
         for (const control of controls) {
-          for (const [type, listener] of listeners) control.removeEventListener(type, listener);
+          for (const [type, listener] of control === stick ? stickListeners : listeners) {
+            control.removeEventListener(type, listener);
+          }
         }
         start.removeEventListener('click', onStartClick);
+        if (typeof layoutQuery?.removeEventListener === 'function') {
+          layoutQuery.removeEventListener('change', releaseAll);
+        }
+        view?.removeEventListener('resize', releaseStale);
         playfield.removeAttribute('data-touch-ready');
       },
     };

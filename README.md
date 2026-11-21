@@ -71,7 +71,9 @@ Inside the scene, `actionState.isHeld(action)` reads continuous actions.
 Adapters can pass a stable, adapter-owned source ID to
 `setHeld(action, source, down)` and send a fresh `requestStart()` pulse.
 The scene accepts that pulse only on an overlay. Blur, hiding the page,
-remapping, and teardown clear held state; adapters must not replay old holds.
+remapping, teardown, and a touch-layout switch (or a resize that takes a
+captured control out of the layout) clear held state; adapters must not
+replay old holds.
 
 Patterns adapted from [Europa Neo PR #210](https://github.com/shaunburdick/europa-neo/pull/210),
 specifically the pinned [`ControlMappingSession` and `matchKeyboardBinding`](https://github.com/shaunburdick/europa-neo/blob/1872a038c640184d98812923fe77c00ea861e438/packages/console/src/input/control-mapping.ts#L402-L504):
@@ -81,6 +83,46 @@ unmodified presses, and explicit gameplay/overlay contexts rather than the
 upstream implementation's logical-key and chord matching.
 
 Run the VM tests with `node --test scripts/void-lancer-*.test.cjs`.
+
+### Phone landscape playtest
+
+In landscape with a coarse pointer and a viewport at most 600 CSS pixels tall,
+the cabinet chrome steps aside
+and the playfield fills the safe viewport at its largest uncropped 16:9:
+
+- **Move** — a floating stick at the bottom-left opens wherever the thumb
+  lands; aim is measured from that press point, so a stationary thumb never
+  steers, and the drawn ring is clamped only to stay inside its zone.
+- **Fire** — a fixed hold-to-fire button at the bottom-right, on its own
+  pointer source so steering and firing stay independent.
+- **Start** — a focusable overlay button kept clear of the in-canvas
+  Start/Continue/Retry CTA.
+
+Outside those conditions, the arcade cabinet stays, including the original
+touch controls on touch devices. Keyboard controls remain available in both
+layouts. Switching layouts, or resizing so a captured control leaves the
+layout, releases the affected touch input.
+
+For a LAN preview, set `LAN_IP` to this computer's Wi-Fi address and run this
+from the worktree root:
+
+```bash
+python3 -m http.server 8772 --bind "${LAN_IP:?Set LAN_IP first}" --directory public
+```
+
+Then on the phone open `http://<LAN-IP>:8772/void-lancer/`, adding
+`?sortie=2` to land on the Graveyard Sortie briefing directly. There is no
+build step: to restart the preview, stop the server and run the same command
+again.
+
+Targeted test for this work: `node --test scripts/void-lancer-controls.test.cjs`.
+
+The first phone playtest was on a real iPhone, and the floating stick plus
+fixed hold-to-fire controls were accepted as they are. Revisiting the Fire
+button's placement, size and reach while steering — with browser bars visible
+and in both landscape orientations — is GitHub issue #14: a follow-up, not a
+blocker, and no redesign is requested; independent steering and firing,
+hold-to-fire, and the uncropped playfield stay as they are.
 
 ## Production Deployment
 Production deployment is handled by Cloud Run's connected repository

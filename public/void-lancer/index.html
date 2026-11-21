@@ -150,6 +150,11 @@
       display: none;
     }
 
+    /* Landscape-only floating stick: the portrait pad keeps its own station. */
+    .landscape-stick {
+      display: none;
+    }
+
     @media (any-pointer: coarse) {
       .playfield[data-touch-ready] {
         --touch-pad-size: clamp(100px, 32vw, 136px);
@@ -397,27 +402,181 @@
       }
     }
 
+    /* Landscape playtest (coarse pointers only): the cabinet chrome steps
+       aside so the playfield can fill the safe viewport at its largest
+       uncropped 16:9. Desktop, portrait and touch laptops keep the cabinet. */
     @media (any-pointer: coarse) and (orientation: landscape) and (max-height: 600px) {
+      html, body {
+        height: 100%;
+        overflow: hidden;
+      }
+
+      body {
+        padding: 0;
+        background: #010208;
+      }
+
       .arcade-machine, .arcade-machine:fullscreen {
-        /* Reserve height for the cabinet header, footer and outer padding. */
-        --cabinet-screen-limit: max(160px, calc((100dvh - 150px) * 16 / 9));
-        padding: 8px;
+        width: 100%;
+        height: 100vh;
+        height: 100dvh;
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        overflow: hidden;
+        background: #010208;
+        box-shadow: none;
       }
 
-      .arcade-header {
-        flex-direction: row;
+      .arcade-machine::before,
+      .arcade-header,
+      .pilot-setup,
+      .arcade-footer {
+        display: none;
+      }
+
+      /* The play layout is CSS-only on purpose: Phaser measures its parent
+         during boot, before the scene can mark the playfield touch-ready, so
+         the size it measures has to already be the size it keeps. The second
+         selector keeps the pre-touch-ready paint identical to the one after it. */
+      .playfield[data-touch-ready],
+      .playfield {
+        position: absolute;
+        inset: 0;
+        inset: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
+          env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+        display: flex;
         align-items: center;
-        flex-wrap: wrap;
-        gap: 4px 8px;
-        margin-bottom: 6px;
-        padding-bottom: 6px;
+        justify-content: center;
       }
 
-      .playfield[data-touch-ready] {
-        --touch-pad-size: clamp(84px, 20dvh, 108px);
-        grid-template-columns: var(--touch-pad-size) minmax(0, 1fr) var(--touch-pad-size);
-        grid-template-areas: "move screen right";
-        gap: 6px;
+      /* Widest 16:9 that fits the safe area: never cropped, never scrolling.
+         The vh line is the fallback for viewports without dynamic units, so
+         they size the same way instead of dropping to the cabinet limit. */
+      .playfield .screen-container {
+        width: min(100%, calc((100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) * 16 / 9));
+        width: min(100%, calc((100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) * 16 / 9));
+        /* Black on black: the border only shrank the play area off 16:9. */
+        border: 0;
+      }
+
+      #game-root {
+        width: 100%;
+      }
+
+      .playfield[data-touch-ready] .touch-move {
+        display: none;
+      }
+
+      /* Floating stick, inset from the corner it sits in and drawn over the
+         peripheral play space only: a faint ring at rest, cyan while dragged. */
+      .playfield[data-touch-ready] .landscape-stick {
+        display: block;
+        position: absolute;
+        left: 14px;
+        bottom: 14px;
+        z-index: 3;
+        width: clamp(128px, 34vh, 168px);
+        aspect-ratio: 1;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+      }
+
+      .landscape-stick-ring,
+      .landscape-stick-knob {
+        position: absolute;
+        transform: translate(-50%, -50%);
+        border-radius: 50%;
+        pointer-events: none;
+      }
+
+      .landscape-stick-ring {
+        box-sizing: border-box;
+        width: 92px; /* Half of it is the stickReach the input code uses. */
+        height: 92px;
+        left: var(--stick-ox, 50%);
+        top: var(--stick-oy, 50%);
+        border: 2px solid rgba(0, 229, 255, 0.4);
+        opacity: 0.5;
+      }
+
+      .landscape-stick-knob {
+        box-sizing: border-box;
+        width: 34px;
+        height: 34px;
+        left: calc(var(--stick-ox, 50%) + var(--stick-kx, 0px));
+        top: calc(var(--stick-oy, 50%) + var(--stick-ky, 0px));
+        border: 1px solid rgba(0, 229, 255, 0.55);
+        background: rgba(0, 229, 255, 0.16);
+      }
+
+      .landscape-stick[data-active] .landscape-stick-ring {
+        opacity: 1;
+        border-color: rgba(0, 229, 255, 0.9);
+        box-shadow: 0 0 14px rgba(0, 229, 255, 0.35), inset 0 0 14px rgba(0, 229, 255, 0.12);
+      }
+
+      .landscape-stick[data-active] .landscape-stick-knob {
+        border-color: #71e7ff;
+        background: rgba(113, 231, 255, 0.5);
+        box-shadow: 0 0 12px rgba(0, 229, 255, 0.45);
+      }
+
+      .landscape-stick[aria-disabled="true"] {
+        opacity: 0.4;
+      }
+
+      .playfield[data-touch-ready] .touch-right {
+        position: absolute;
+        right: 14px;
+        bottom: 14px;
+        z-index: 3;
+      }
+
+      .playfield[data-touch-ready] #touchFire {
+        box-sizing: border-box;
+        width: 64px;
+        height: 64px;
+        min-height: 0;
+        padding: 0;
+        font-size: 0.72rem;
+        letter-spacing: 0.06em;
+        background: rgba(6, 15, 30, 0.62);
+        border: 2px solid rgba(0, 229, 255, 0.75);
+        color: #eefbff;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+        box-shadow: inset 0 0 0 1px rgba(255, 150, 60, 0.3), 0 0 10px rgba(0, 229, 255, 0.18);
+      }
+
+      .playfield[data-touch-ready] #touchFire[data-firing],
+      .playfield[data-touch-ready] #touchFire:active {
+        background: var(--clr-cerulean);
+        border-color: #ff9d4d;
+        color: #07111f;
+        text-shadow: none;
+        transform: scale(0.94);
+        box-shadow: inset 0 0 0 1px rgba(255, 157, 77, 0.6), 0 0 16px rgba(0, 229, 255, 0.5);
+      }
+
+      /* The overlay action keeps a real, focusable button clear of the
+         in-canvas Start/Continue/Retry CTA at the centre of the screen. */
+      .playfield[data-touch-ready] #touchStart {
+        box-sizing: border-box;
+        width: auto;
+        min-width: 148px;
+        min-height: 48px;
+        padding: 10px 18px;
+        background: #71e7ff;
+        color: #07111f;
+        border-color: #71e7ff;
+        box-shadow: 0 0 16px rgba(0, 229, 255, 0.45);
+      }
+
+      .playfield[data-touch-ready] #touchStart:active {
+        transform: scale(0.96);
+        box-shadow: 0 0 22px rgba(0, 229, 255, 0.65);
       }
     }
   </style>
@@ -452,6 +611,10 @@
       <div class="touch-station touch-right">
         <button class="btn-arcade touch-button" id="touchFire" type="button" aria-label="Hold to fire" tabindex="-1" hidden>Fire</button>
         <button class="btn-arcade touch-button" id="touchStart" type="button" hidden>Start Sortie</button>
+      </div>
+      <div class="landscape-stick" id="touchStick" role="group" aria-label="Movement stick: touch and slide in any direction">
+        <span class="landscape-stick-ring" aria-hidden="true"></span>
+        <span class="landscape-stick-knob" aria-hidden="true"></span>
       </div>
     </div>
 
@@ -500,8 +663,10 @@
   <!-- Scripts -->
   <script src="./js/phaser.min.js"></script>
   <script src="./js/level1_stage_data.js"></script>
-  <script src="./js/controls.js?v=2"></script>
-  <script src="./js/main.js?v=6"></script>
+  <script src="./js/level2_stage_data.js?v=1"></script>
+  <script src="./js/graveyard-sortie.js?v=1"></script>
+  <script src="./js/controls.js?v=3"></script>
+  <script src="./js/main.js?v=8"></script>
   <script src="./js/pilot-setup.js?v=1"></script>
 </body>
 </html>

@@ -128,7 +128,7 @@ window.VoidLancerLevel2StageData = {
       // with, still on screen so the clear does not arrive cold.
       time: 28.0,
       actions: [
-        { type: 'announce', text: 'ROUTE RECORD // NEXT LEG: THE SOLAR ALTAR', ttl: 2, kind: 'notice' },
+        { type: 'announce', text: 'ROUTE RECORD // DESTINATION: SOLAR ALTAR', ttl: 2, kind: 'notice' },
       ],
     },
   ],

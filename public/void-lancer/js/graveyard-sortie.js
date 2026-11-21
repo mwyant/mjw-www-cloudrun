@@ -19,7 +19,9 @@ const VoidLancerGraveyard = (() => {
 
   // Safe preview shortcut: ?sortie=2 opens the Graveyard briefing and
   // ?sortie=3 the Solar Altar. Anything else, including a malformed query,
-  // stays on the First Sortie.
+  // stays on the First Sortie. Arcade stage ids (?sortie=escalation-01) are
+  // matched by resolveSortieEntry() in main.js before this is consulted, so
+  // they never land here as "anything else".
   function readSortieIndex(search) {
     if (typeof search !== 'string' || search === '') return 1;
     try {

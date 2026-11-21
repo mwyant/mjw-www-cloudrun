@@ -161,10 +161,97 @@ const DEFAULT_STAGE_DATA = { waveTimeline: [], backdropCues: [], environmentTime
 const LEVEL_1_STAGE_DATA = window.VoidLancerLevel1StageData || DEFAULT_STAGE_DATA;
 const LEVEL_2_STAGE_DATA = window.VoidLancerLevel2StageData || DEFAULT_STAGE_DATA;
 const LEVEL_3_STAGE_DATA = window.VoidLancerLevel3StageData || DEFAULT_STAGE_DATA;
+const ARCADE_STAGE_DATA = window.VoidLancerArcadeStageData || { stages: {}, provisionalOrder: [] };
 
-// The HUD stage counter covers the whole eligible chain, not one lane's own
-// pair: First Sortie, Graveyard, Solar Altar.
-const STAGE_LABELS = ['01 / 03', '02 / 03', '03 / 03'];
+// --- Campaign chain: routing identity vs display order ---------------------
+//
+// Two different questions, answered by two different things and never mixed:
+//
+//   Routing identity - what the URL asked for. `sortieIndex` keeps its three
+//     authored values (1 First Sortie, 2 Graveyard, 3 Solar Altar), so the
+//     public ?sortie=2 and ?sortie=3 / altar aliases still open exactly the
+//     lanes they always opened. An arcade stage is routed by its own id in
+//     `arcadeStageId` instead, and while one is live `sortieIndex` is
+//     ARCADE_SORTIE - a value no authored lane claims, so every authored
+//     lane-specific branch below stays out of the arcade path.
+//
+//   Display order - where a sortie sits in the twelve-stage chain the HUD
+//     counts and the Continue button walks: First Sortie 1, Graveyard 2, the
+//     nine arcade stages 3-11 in arcade_stage_data.js provisionalOrder, the
+//     Solar Altar finale 12. It lives on each entry as `displayIndex` and is
+//     never used for routing.
+//
+// That split is what keeps the finale playable by practice link after it
+// moved: ?sortie=3 and its aliases still route to the Solar Altar while its
+// stage counter reads 12 / 12.
+const ARCADE_SORTIE = 0;
+
+// Progress tags read as words ("Two of Twelve Clear"), so the numbers are
+// words too - and both the position and the total come from the data.
+const COUNT_WORDS = ['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve'];
+const countWord = (value) => (COUNT_WORDS[value] ?? String(value));
+
+function buildCampaignEntries(arcade) {
+  const entries = [
+    // The First Sortie's debrief has always offered "Continue to Graveyard",
+    // not "... Graveyard Lane". Keep that public copy.
+    { kind: 'first', id: 'first-sortie', sortieIndex: 1, title: 'First Sortie', nextLabel: 'Graveyard' },
+    { kind: 'graveyard', id: 'graveyard', sortieIndex: 2, title: 'Graveyard Lane' },
+  ];
+  // The arcade block sits between the Graveyard and the finale, in the order
+  // the data pass left it. Ids are the lookup, so a re-sequencing pass only
+  // moves these entries; it never renumbers anything else.
+  for (const id of arcade.provisionalOrder || []) {
+    const stage = arcade.stages ? arcade.stages[id] : null;
+    if (!stage || entries.some((entry) => entry.id === stage.id)) continue;
+    entries.push({ kind: 'arcade', id: stage.id, sortieIndex: ARCADE_SORTIE, title: stage.title });
+  }
+  entries.push({ kind: 'altar', id: 'solar-altar', sortieIndex: 3, title: 'Solar Altar' });
+
+  entries.forEach((entry, index) => {
+    entry.displayIndex = index + 1;
+    entry.stageId = entry.kind === 'arcade' ? entry.id : null;
+    const next = entries[(index + 1) % entries.length];
+    // The finale continues nowhere: its debrief offers the replay instead.
+    if (entry.kind !== 'altar' && entry.nextLabel == null) entry.nextLabel = next.title;
+  });
+  return entries;
+}
+
+const CAMPAIGN = buildCampaignEntries(ARCADE_STAGE_DATA);
+const CAMPAIGN_TOTAL = CAMPAIGN.length;
+
+function stageLabel(entry) {
+  const pad = (value) => String(value).padStart(2, '0');
+  return `${pad(entry.displayIndex)} / ${pad(CAMPAIGN_TOTAL)}`;
+}
+
+function campaignNext(entry) {
+  return CAMPAIGN[entry.displayIndex % CAMPAIGN_TOTAL];
+}
+
+function findArcadeEntry(stageId) {
+  return CAMPAIGN.find((entry) => entry.kind === 'arcade' && entry.id === stageId) || null;
+}
+
+// The arcade practice links are ?sortie=<stage id>, e.g. ?sortie=escalation-01.
+// Arcade ids are matched before the legacy aliases are read, because the
+// legacy parser answers 1 for anything it does not recognise - and no stage id
+// may collide with an alias ('1', '2', '3', 'graveyard', 'altar', ...).
+function resolveSortieEntry(search) {
+  if (typeof search === 'string' && search !== '') {
+    try {
+      const flag = new URLSearchParams(search).get('sortie');
+      const value = flag == null ? '' : String(flag).trim().toLowerCase();
+      const arcade = value ? findArcadeEntry(value) : null;
+      if (arcade) return arcade;
+    } catch (error) {
+      // Malformed query: the legacy parser below handles it the way it always has.
+    }
+  }
+  const index = VoidLancerGraveyard.readSortieIndex(search);
+  return CAMPAIGN.find((entry) => entry.kind !== 'arcade' && entry.sortieIndex === index) || CAMPAIGN[0];
+}
 
 const STAGE_BACKGROUND_MODULE_LAYOUT = [
   { kind: 'towerCluster', x: GAME_WIDTH + 40, y: 96, speed: 13, scale: 1.0, alpha: 0.24, wobbleAmount: 1.0, wobbleSpeed: 0.58, recycleGap: 220 },
@@ -234,9 +321,12 @@ class MockupLevelScene extends Phaser.Scene {
     super('MockupLevel');
     this.assetManifest = null;
     this.levelStageData = LEVEL_1_STAGE_DATA;
-    // Resolved from ?sortie=2 (Graveyard) or ?sortie=3 (Solar Altar) when the
-    // scene boots; 1 is the First Sortie.
+    // Routing identity, not display order: resolved when the scene boots.
+    // ?sortie=2 opens the Graveyard, ?sortie=3 (or an altar alias) the Solar
+    // Altar, ?sortie=<stage id> an arcade stage, and anything else the First
+    // Sortie. `displayIndex` on campaignEntry() is what the HUD counts instead.
     this.sortieIndex = 1;
+    this.arcadeStageId = null;
     this.carriedScore = 0;
     this.graveyardObjects = [];
     this.graveyardDebris = null;
@@ -303,7 +393,7 @@ class MockupLevelScene extends Phaser.Scene {
   }
 
   create() {
-    this.sortieIndex = VoidLancerGraveyard.readSortieIndex(window.location?.search);
+    this.applyRoute(resolveSortieEntry(window.location?.search));
     this.assetManifest = this.cache.json.get('runtimeAssetManifest') || DEFAULT_ASSET_MANIFEST;
 
     this.setupAudioControls();
@@ -368,7 +458,35 @@ class MockupLevelScene extends Phaser.Scene {
     this.updateAnnouncementDisplay();
   }
 
+  // One place sets the routing identity, so the display order can never leak
+  // into it: an entry carries kind/id/sortieIndex, never a bare display slot.
+  applyRoute(entry) {
+    const next = entry || CAMPAIGN[0];
+    this.sortieIndex = next.sortieIndex;
+    this.arcadeStageId = next.stageId;
+    return next;
+  }
+
+  // The live entry in campaign order, derived from the routing identity so a
+  // caller that sets sortieIndex directly still reads the right position.
+  campaignEntry() {
+    if (this.arcadeStageId) {
+      const arcade = findArcadeEntry(this.arcadeStageId);
+      if (arcade) return arcade;
+    }
+    return CAMPAIGN.find((entry) => entry.kind !== 'arcade' && entry.sortieIndex === this.sortieIndex)
+      || CAMPAIGN[0];
+  }
+
+  arcadeStage() {
+    return this.arcadeStageId ? (ARCADE_STAGE_DATA.stages[this.arcadeStageId] || null) : null;
+  }
+
   getLevelStageData() {
+    // An arcade route is its own stage record: same fields the runtime reads
+    // (waveTimeline, missionDuration, backdrop cues), no separate level file.
+    const arcade = this.arcadeStage();
+    if (arcade) return arcade;
     if (this.sortieIndex === 3) return LEVEL_3_STAGE_DATA;
     return this.sortieIndex === 2 ? LEVEL_2_STAGE_DATA : LEVEL_1_STAGE_DATA;
   }
@@ -581,6 +699,27 @@ class MockupLevelScene extends Phaser.Scene {
   }
 
   sortieBriefing() {
+    // An arcade route shares no sortieIndex value with the authored lanes, so
+    // it must be handled here rather than falling through to the First Sortie.
+    const entry = this.campaignEntry();
+    if (entry.kind === 'arcade') {
+      const stage = this.arcadeStage();
+      // Objective first, the lane's own read second, then the clock: an arcade
+      // stage clears on missionDuration rather than on a boss, and the player
+      // has to know which one of those the run is waiting for.
+      const clock = stage && Number.isFinite(stage.missionDuration)
+        ? ` Survive ${stage.missionDuration} seconds to clear.`
+        : '';
+      return {
+        title: entry.title,
+        summary: (stage?.briefing || `Objective: hold the ${entry.title} lane to the clock.`) + clock,
+        detail: 'Touch: slide on the left; hold Fire. Keyboard: WASD / arrows, Space / J / K.',
+        button: 'Start Sortie',
+        tag: 'Mission Briefing',
+        accent: COLORS.cyan,
+        subtitle: `VOID LANCER // ${entry.title.toUpperCase()} SORTIE`,
+      };
+    }
     if (this.sortieIndex === 3) {
       return {
         title: 'Solar Altar',
@@ -630,9 +769,11 @@ class MockupLevelScene extends Phaser.Scene {
     this.startMusicPlayback();
     if (this.state?.mode === 'victory') {
       // A cleared sortie never starts the next one by itself: the overlay
-      // offers the next lane (or a full replay) and its briefing follows.
-      // The chain runs First Sortie -> Graveyard -> Solar Altar -> replay.
-      this.enterSortie(this.sortieIndex === 3 ? 1 : this.sortieIndex + 1);
+      // offers the next entry (or a full replay) and its briefing follows.
+      // The chain is the campaign order, so the Graveyard leads into the nine
+      // arcade sorties, the last of them into the Solar Altar, and the finale
+      // wraps back to the First Sortie.
+      this.enterSortie(campaignNext(this.campaignEntry()));
       return;
     }
     this.beginSortie();
@@ -644,17 +785,18 @@ class MockupLevelScene extends Phaser.Scene {
     this.hideOverlay();
   }
 
-  enterSortie(index) {
-    const next = index === 3 ? 3 : index === 2 ? 2 : 1;
+  enterSortie(entry) {
+    const next = entry || CAMPAIGN[0];
     // Score carries across a run; replaying the run starts it over.
-    this.carriedScore = next === 1 ? 0 : (this.state?.score || 0);
-    this.sortieIndex = next;
+    this.carriedScore = next.displayIndex === 1 ? 0 : (this.state?.score || 0);
+    this.applyRoute(next);
     this.resetGame();
     this.showIntro();
   }
 
   sortieEndCopy(victory) {
     const score = `Score: ${this.state.score}`;
+    const entry = this.campaignEntry();
     if (victory && this.sortieIndex === 3) {
       return {
         title: 'Solar Altar Secured',
@@ -670,18 +812,38 @@ class MockupLevelScene extends Phaser.Scene {
       };
     }
     if (victory && this.sortieIndex === 2) {
+      const arcadeCount = CAMPAIGN.filter((item) => item.kind === 'arcade').length;
       return {
-        // Two of three: the run is still going, so neither the title nor the
-        // tag may read as a finish line.
+        // Two of twelve: the run is still going, so neither the title nor the
+        // tag may read as a finish line, and the altar is the finale rather
+        // than the next stop.
         title: 'Graveyard Secured',
-        // Payoff in the same order the lane taught it: route record, amber
-        // markers, Solar Altar, then the leg the button offers.
-        summary: 'Graveyard crossed. The amber markers match the Carrier’s route record. Next stop: the Solar Altar.',
+        // Payoff in the order the lane taught it - route record, amber markers
+        // - then the leg the button actually offers: the arcade block that now
+        // stands between the yard and the altar. With no arcade data loaded the
+        // chain really is Graveyard -> Solar Altar, and the old copy is the
+        // honest one there.
+        summary: arcadeCount
+          ? 'Graveyard crossed. The amber markers match the Carrier’s route record. Follow it through the defense lanes to the Solar Altar.'
+          : 'Graveyard crossed. The amber markers match the Carrier’s route record. Next stop: the Solar Altar.',
         detail: score,
-        button: 'Continue to Solar Altar',
-        tag: 'Two of Three Clear',
+        button: `Continue to ${entry.nextLabel}`,
+        tag: `${countWord(entry.displayIndex)} of ${countWord(CAMPAIGN_TOTAL)} Clear`,
         accent: COLORS.gold,
         subtitle: 'First Sortie and Graveyard secured',
+      };
+    }
+    if (victory && entry.kind === 'arcade') {
+      return {
+        title: `${entry.title} Secured`,
+        // Wiring-layer debrief: the lane cleared on its clock and the chain
+        // moves on. No new narrative beats belong to this pass.
+        summary: `${entry.title} held to the clock. Next stop: ${entry.nextLabel}.`,
+        detail: score,
+        button: `Continue to ${entry.nextLabel}`,
+        tag: `${countWord(entry.displayIndex)} of ${countWord(CAMPAIGN_TOTAL)} Clear`,
+        accent: COLORS.gold,
+        subtitle: `${stageLabel(entry)} secured`,
       };
     }
     if (victory) {
@@ -689,7 +851,7 @@ class MockupLevelScene extends Phaser.Scene {
         title: 'Sortie Complete',
         summary: 'The siege carrier is burning out behind you. First lane secured.',
         detail: score,
-        button: 'Continue to Graveyard',
+        button: `Continue to ${entry.nextLabel}`,
         tag: 'Mission Clear',
         accent: COLORS.gold,
         subtitle: 'Carrier neutralized',
@@ -717,6 +879,17 @@ class MockupLevelScene extends Phaser.Scene {
         subtitle: 'Graveyard lane still hostile',
       };
     }
+    if (entry.kind === 'arcade') {
+      return {
+        title: 'Mission Failed',
+        summary: `Hull lost in the ${entry.title} lane. The run is ready for another pass.`,
+        detail: score,
+        button: `Retry ${entry.title}`,
+        tag: 'Mission Failed',
+        accent: COLORS.red,
+        subtitle: `${entry.title} still hostile`,
+      };
+    }
     return {
       title: 'Mission Failed',
       summary: 'The corridor chewed you up. The lane is still hostile.',
@@ -742,8 +915,8 @@ class MockupLevelScene extends Phaser.Scene {
 
     this.overlayDim.setVisible(true);
     this.overlayPanel.setVisible(true);
-    // The legacy wordmark includes “First Sortie”; don't put it on the finale.
-    this.overlayLogo.setVisible(this.sortieIndex !== 3);
+    // The legacy wordmark includes “First Sortie”; omit it on arcade lanes and the finale.
+    this.overlayLogo.setVisible(this.sortieIndex !== 3 && this.sortieIndex !== ARCADE_SORTIE);
     this.overlayLogoGlow.setVisible(true);
     this.overlayMotionLayer.setVisible(true);
     this.overlayTag.setVisible(Boolean(tag));
@@ -1703,8 +1876,16 @@ class MockupLevelScene extends Phaser.Scene {
     this.livesText.setText(this.state.player.lives.toString().padStart(2, '0'));
     this.weaponText.setText(this.state.player.weaponLevel > 1 ? 'PULSE+' : 'PULSE');
     this.weaponTag.setText(this.state.player.weaponLevel > 1 ? 'MK II' : 'MK I');
-    this.stageText.setText(STAGE_LABELS[this.sortieIndex - 1] || STAGE_LABELS[0]);
-    if (this.sortieIndex === 3) {
+    // The counter reads display order, never the routing identity: the finale
+    // shows 12 / 12 while ?sortie=3 still routes to it for practice.
+    const entry = this.campaignEntry();
+    this.stageText.setText(stageLabel(entry));
+    if (entry.kind === 'arcade') {
+      // An arcade stage has no boss queue and no warden to telegraph, so the
+      // tag just names the lane that is live.
+      this.stageTag.setText(entry.title.toUpperCase());
+      this.stageTag.setColor('#8ea6cd');
+    } else if (this.sortieIndex === 3) {
       this.stageTag.setText(this.state.boss ? 'WARDEN ENGAGED' : this.state.bossQueued ? 'CORE LOCKED' : 'ALTAR LANE');
       this.stageTag.setColor(this.state.boss || this.state.bossQueued ? '#ffd65a' : '#8ea6cd');
     } else if (this.sortieIndex === 2) {
@@ -1974,8 +2155,11 @@ class MockupLevelScene extends Phaser.Scene {
     this.updateAnnouncements(dt);
     // updateBullets/updateCollisions can end the run inside this same frame, so
     // the worklight read and the timed clear only run while the lane is live.
-    if (this.sortieIndex === 2 && this.state.mode === 'playing') {
-      this.updateGraveyard(dt);
+    // The clock clears any lane that declares a missionDuration - the Graveyard
+    // crossing and the nine arcade stages. The First Sortie and the Solar Altar
+    // declare none and end on their boss instead.
+    if (this.state.mode === 'playing') {
+      if (this.sortieIndex === 2) this.updateGraveyard(dt);
       const duration = this.levelStageData?.missionDuration;
       if (duration && this.state.time >= duration) this.finishGame(true);
     }
@@ -2523,7 +2707,7 @@ class MockupLevelScene extends Phaser.Scene {
       .setBlendMode(Phaser.BlendModes.ADD);
 
     this.stageLabel = this.add.text(606, 17, 'STAGE', hudLabelStyle).setDepth(DEPTH.hud + 2);
-    this.stageText = this.add.text(606, 34, '01 / 02', { fontFamily: 'Arial', fontSize: '24px', color: '#eef5ff', fontStyle: 'bold' }).setDepth(DEPTH.hud + 2);
+    this.stageText = this.add.text(606, 34, stageLabel(CAMPAIGN[0]), { fontFamily: 'Arial', fontSize: '24px', color: '#eef5ff', fontStyle: 'bold' }).setDepth(DEPTH.hud + 2);
     this.stageTag = this.add.text(718, 34, 'OPENING LANE', { fontFamily: 'Arial', fontSize: '14px', color: '#8ea6cd', fontStyle: 'bold' }).setDepth(DEPTH.hud + 2);
 
     this.bossBarFrame = this.add.image(780, 104, 'bossBarFrame').setDisplaySize(304, 58).setVisible(false).setDepth(DEPTH.hud + 2);

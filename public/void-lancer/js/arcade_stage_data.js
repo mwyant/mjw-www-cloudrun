@@ -18,6 +18,11 @@
 // queue ticks every banner's ttl together, so overlapping entries would cut
 // each other off). Enemies spawn just off the right edge of the 960x540
 // playfield and fly in whole.
+//
+// `briefing` is the stage's own text on the briefing overlay: an Objective
+// first and one read the lane is built on, capped at 170 characters so it
+// wraps to three lines. The controls line and the clock are supplied by the
+// scene, so they do not belong here.
 window.VoidLancerArcadeStageData = {
   // Provisional order by title: Split Lane, The Crossing, Gun Line, Relay Run,
   // Crossing Picket, High-Low Battery, Shifting Lanes, Turret Line, Final
@@ -39,7 +44,7 @@ window.VoidLancerArcadeStageData = {
     'escalation-01': {
       id: 'escalation-01',
       title: 'Split Lane',
-      briefing: 'Objective: hold both heights. Scouts run the upper and lower lanes in alternating pairs - pick a lane, clear it, then breathe through the quiet before the next run. Touch: slide on the left; hold Fire. Keyboard: WASD / arrows, Space / J / K.',
+      briefing: 'Objective: hold both heights. Scouts run the lanes in alternating pairs - pick a lane, clear it, then breathe before the next run.',
       missionDuration: 30,
       waveTimeline: [
         {
@@ -152,7 +157,7 @@ window.VoidLancerArcadeStageData = {
     'escalation-02': {
       id: 'escalation-02',
       title: 'The Crossing',
-      briefing: 'Objective: read the crossing. Zigzag fighters weave the middle on offset phases - commit to one gap instead of chasing, and let the lane empty before the next pair commits. Touch: slide on the left; hold Fire. Keyboard: WASD / arrows, Space / J / K.',
+      briefing: 'Objective: read the crossing. Zigzag fighters weave the middle on offset phases - commit to one gap instead of chasing, then breathe.',
       missionDuration: 32,
       waveTimeline: [
         {
@@ -333,7 +338,7 @@ window.VoidLancerArcadeStageData = {
     'escalation-03': {
       id: 'escalation-03',
       title: 'Gun Line',
-      briefing: 'Objective: break the gun line. Turrets arrive one at a time while drones sweep the gap behind them - kill the guns first, keep moving, and survive to the clear. Touch: slide on the left; hold Fire. Keyboard: WASD / arrows, Space / J / K.',
+      briefing: 'Objective: break the gun line. Turrets arrive one at a time while drones sweep the gap behind them - kill the guns first and keep moving.',
       missionDuration: 34,
       waveTimeline: [
         {
@@ -487,7 +492,7 @@ window.VoidLancerArcadeStageData = {
     'escalation-04-drone-relay': {
       id: 'escalation-04-drone-relay',
       title: 'Relay Run',
-      briefing: 'Objective: ride the gap. Fast drone packets cross in staggered bands and every pass leaves one open lane - take it, clear the packet, then breathe through the quiet before the next drop. Touch: slide on the left; hold Fire. Keyboard: WASD / arrows, Space / J / K.',
+      briefing: 'Objective: ride the gap. Drone packets cross in staggered bands and every pass leaves one open lane - take it, clear the packet, breathe.',
       missionDuration: 33,
       waveTimeline: [
         {
@@ -693,7 +698,7 @@ window.VoidLancerArcadeStageData = {
     'escalation-05-high-low-battery': {
       id: 'escalation-05-high-low-battery',
       title: 'High-Low Battery',
-      briefing: 'Objective: break the battery relay. Guns take the top and bottom tracks in turn while scouts screen the middle - hold the open height, clear the screens, and let the sides trade fire around you. Touch: slide on the left; hold Fire. Keyboard: WASD / arrows, Space / J / K.',
+      briefing: 'Objective: break the battery relay. Guns take the top and bottom tracks in turn while scouts screen the middle - hold the open height.',
       missionDuration: 35,
       waveTimeline: [
         {
@@ -884,7 +889,7 @@ window.VoidLancerArcadeStageData = {
     'escalation-06-crossing-picket': {
       id: 'escalation-06-crossing-picket',
       title: 'Crossing Picket',
-      briefing: 'Objective: break the crossing picket. Scout screens arrive first and zigzag pairs weave behind them - break the screen, then commit to one gap and let the lane empty before the next pair. Touch: slide on the left; hold Fire. Keyboard: WASD / arrows, Space / J / K.',
+      briefing: 'Objective: break the crossing picket. Scout screens arrive first and zigzag pairs weave behind them - break the screen, then commit.',
       missionDuration: 36,
       waveTimeline: [
         {
@@ -1093,7 +1098,7 @@ window.VoidLancerArcadeStageData = {
     'escalation-7-turret-line': {
       id: 'escalation-7-turret-line',
       title: 'Turret Line',
-      briefing: 'TURRETS ARE THE PRIORITY. DRONES ARRIVE IN STAGGERED DROPS WHILE THE LINE HOLDS FIRE.',
+      briefing: 'Objective: clear the turret line. Guns hold their stations while drones drop in staggered packs - break the guns first, then the drops.',
       missionDuration: 36,
       waveTimeline: [
         {
@@ -1372,7 +1377,7 @@ window.VoidLancerArcadeStageData = {
     'escalation-8-shifting-lanes': {
       id: 'escalation-8-shifting-lanes',
       title: 'Shifting Lanes',
-      briefing: 'ZIGZAG LAYERS SHIFT THE GAPS. RIDE THE OPEN LANE AND KEEP IT MOVING.',
+      briefing: 'Objective: ride the shifting lanes. Zigzag layers move the gaps - take the open lane and keep it moving.',
       missionDuration: 38,
       waveTimeline: [
         {
@@ -1653,7 +1658,7 @@ window.VoidLancerArcadeStageData = {
     'escalation-9-final-proof': {
       id: 'escalation-9-final-proof',
       title: 'Final Proof',
-      briefing: 'MIXED CONTACT AFTER A SHORT BREATHER. CLEAR THE FINAL WAVE BEFORE THE FINALE.',
+      briefing: 'Objective: break the final proof. Mixed contact lands after a short breather - clear the last wave before the run ends.',
       missionDuration: 41,
       waveTimeline: [
         {

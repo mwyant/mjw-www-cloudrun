@@ -6,9 +6,15 @@
 // The lane reads in four beats: objective (0.6s), who owns the worklight
 // (5.5s), the amber markers the route record follows (12.0s), then a bounded
 // exit beat - the last wave at 25.5s, nothing spawns after it, and the route
-// record names the next stop while the run is still live. Announcements are
+// record names the destination while the run is still live. Announcements are
 // spaced so each one finishes before the next arrives (the queue ticks every
 // banner's ttl together, so overlapping entries would cut each other off).
+//
+// The waves carry the difficulty: the seven original beats stay exactly as
+// authored and eight more sit between them, so a spawn lands every 2.5s or
+// less instead of every 3-5.5s and two or three waves are alive at once.
+// Every hull keeps its stock hit points - the ramp is count, cadence and
+// overlap, never durability.
 window.VoidLancerLevel2StageData = {
   missionDuration: 30,
   waveTimeline: [
@@ -34,6 +40,20 @@ window.VoidLancerLevel2StageData = {
       ],
     },
     {
+      // First contact lands while the objective plate is still up, so the
+      // lane is already contested before the worklight is named.
+      time: 1.5,
+      actions: [
+        {
+          type: 'spawnEnemies',
+          enemies: [
+            { type: 'scout', x: 1040, y: 178 },
+            { type: 'scout', x: 1136, y: 366 },
+          ],
+        },
+      ],
+    },
+    {
       time: 3.0,
       actions: [
         {
@@ -47,11 +67,40 @@ window.VoidLancerLevel2StageData = {
       ],
     },
     {
+      // Two weaves crossing under the first scout line: the middle band stops
+      // being empty between the early beats.
+      time: 5.0,
+      actions: [
+        {
+          type: 'spawnEnemies',
+          enemies: [
+            { type: 'zigzag', x: 1058, y: 152, options: { phase: 0.6 } },
+            { type: 'zigzag', x: 1148, y: 406, options: { phase: 2.4 } },
+          ],
+        },
+      ],
+    },
+    {
       // Independent mercenary salvager, not the Imperial survivors: the light
       // is theirs, and the boat is scenery, never a target.
       time: 5.5,
       actions: [
         { type: 'announce', text: 'WORKLIGHT // MERCENARY SALVAGER', ttl: 3, kind: 'notice' },
+      ],
+    },
+    {
+      // A drone pair crosses while the salvager banner is up: the light beat
+      // is never a breather.
+      time: 6.8,
+      actions: [
+        {
+          type: 'spawnEnemies',
+          enemies: [
+            { type: 'drone', x: 1030, y: 128, options: { speed: 226 } },
+            { type: 'drone', x: 1118, y: 266, options: { speed: 232 } },
+            { type: 'drone', x: 1206, y: 404, options: { speed: 238 } },
+          ],
+        },
       ],
     },
     {
@@ -62,6 +111,22 @@ window.VoidLancerLevel2StageData = {
           enemies: [
             { type: 'zigzag', x: 980, y: 112, options: { phase: 0 } },
             { type: 'zigzag', x: 1120, y: 402, options: { phase: 1.6 } },
+          ],
+        },
+      ],
+    },
+    {
+      // The lane's first extra gun line: an untagged turret that fires from
+      // the moment it arrives, escorted by a scout file.
+      time: 10.2,
+      actions: [
+        {
+          type: 'spawnEnemies',
+          enemies: [
+            { type: 'turret', x: 1164, y: 430, options: { speed: 58, phase: 1.7, fireCooldown: 1.2 } },
+            { type: 'scout', x: 1036, y: 146 },
+            { type: 'scout', x: 1120, y: 274 },
+            { type: 'scout', x: 1204, y: 400 },
           ],
         },
       ],
@@ -81,6 +146,21 @@ window.VoidLancerLevel2StageData = {
       ],
     },
     {
+      // Drones stack on the turret's flank: two waves are alive together
+      // through the middle of the lane.
+      time: 13.8,
+      actions: [
+        {
+          type: 'spawnEnemies',
+          enemies: [
+            { type: 'drone', x: 1044, y: 158, options: { speed: 228 } },
+            { type: 'drone', x: 1132, y: 336, options: { speed: 236 } },
+            { type: 'zigzag', x: 1220, y: 244, options: { phase: 2.9 } },
+          ],
+        },
+      ],
+    },
+    {
       time: 16.0,
       actions: [
         {
@@ -95,6 +175,36 @@ window.VoidLancerLevel2StageData = {
       ],
     },
     {
+      // Second gun of the lane, high and slow: bullet pressure doubles from
+      // here without touching the alarm-linked patrol at time 0.
+      time: 18.0,
+      actions: [
+        {
+          type: 'spawnEnemies',
+          enemies: [
+            { type: 'turret', x: 1176, y: 176, options: { speed: 56, phase: 2.8, fireCooldown: 1.1 } },
+            { type: 'scout', x: 1042, y: 300 },
+            { type: 'scout', x: 1128, y: 448 },
+          ],
+        },
+      ],
+    },
+    {
+      // The tightest gap in the lane: this wave lands while the 18.0s line is
+      // still entering, so three waves overlap around the 20s mark.
+      time: 19.8,
+      actions: [
+        {
+          type: 'spawnEnemies',
+          enemies: [
+            { type: 'zigzag', x: 1052, y: 176, options: { phase: 0.3 } },
+            { type: 'zigzag', x: 1142, y: 398, options: { phase: 1.8 } },
+            { type: 'drone', x: 1228, y: 286, options: { speed: 240 } },
+          ],
+        },
+      ],
+    },
+    {
       time: 21.0,
       actions: [
         {
@@ -104,6 +214,22 @@ window.VoidLancerLevel2StageData = {
             { type: 'scout', x: 1065, y: 254 },
             { type: 'scout', x: 1150, y: 378 },
             { type: 'zigzag', x: 1235, y: 452, options: { phase: 0.8 } },
+          ],
+        },
+      ],
+    },
+    {
+      // Last reinforcement before the close, so the final wave lands on a lane
+      // that is already crowded rather than an empty one.
+      time: 23.2,
+      actions: [
+        {
+          type: 'spawnEnemies',
+          enemies: [
+            { type: 'scout', x: 1036, y: 158 },
+            { type: 'scout', x: 1122, y: 286 },
+            { type: 'scout', x: 1208, y: 414 },
+            { type: 'drone', x: 1164, y: 116, options: { speed: 242 } },
           ],
         },
       ],

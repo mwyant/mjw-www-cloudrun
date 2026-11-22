@@ -15,6 +15,13 @@
 // queue ticks every banner's ttl together, so overlapping entries would cut
 // each other off). The altar's rings and repair faces are scenery: there is no
 // environmentTimeline here.
+//
+// The difficulty lives entirely in the wave data: the five authored beats stay
+// exactly as written and five more sit between them, so a hull lands every
+// 2.4s or less instead of every 3.5-5.5s and up to five waves overlap at once.
+// Every hull keeps its stock hit points - the ramp is count, cadence and
+// overlap, never durability - and the queue never moves off 25.0s, because the
+// queue is what holds the Warden back until the lane is actually clear.
 window.VoidLancerLevel3StageData = {
   waveTimeline: [
     {
@@ -34,6 +41,21 @@ window.VoidLancerLevel3StageData = {
             { type: 'scout', x: 980, y: 150 },
             { type: 'scout', x: 1060, y: 268 },
             { type: 'scout', x: 1140, y: 386 },
+          ],
+        },
+      ],
+    },
+    {
+      // The first reinforcement lands while the opening file is still on
+      // screen, so the lane never hands back an empty stretch after contact.
+      time: 3.2,
+      actions: [
+        {
+          type: 'spawnEnemies',
+          enemies: [
+            { type: 'zigzag', x: 1010, y: 118, options: { phase: 0.4 } },
+            { type: 'scout', x: 1104, y: 272 },
+            { type: 'zigzag', x: 1198, y: 430, options: { phase: 2.1 } },
           ],
         },
       ],
@@ -59,16 +81,49 @@ window.VoidLancerLevel3StageData = {
       ],
     },
     {
+      // The tell beat is never a breather: a drone pair crosses under the
+      // banner, high and low, with a weave through the middle band.
+      time: 7.4,
+      actions: [
+        {
+          type: 'spawnEnemies',
+          enemies: [
+            { type: 'drone', x: 1046, y: 132, options: { speed: 226 } },
+            { type: 'zigzag', x: 1134, y: 290, options: { phase: 1.2 } },
+            { type: 'drone', x: 1222, y: 438, options: { speed: 240 } },
+          ],
+        },
+      ],
+    },
+    {
       time: 9.5,
       actions: [
         {
           type: 'spawnEnemies',
           enemies: [
             // Default turret speed on purpose: it has to clear the lane by
-            // itself before the Warden can arrive.
+            // itself before the Warden can arrive. It is also the lane's one
+            // gun - no slower turret is added behind it, or the queue would
+            // have to wait on a hull crawling down-lane.
             { type: 'turret', x: 1150, y: 320, options: { phase: 2.2, fireCooldown: 1.1 } },
             { type: 'scout', x: 1010, y: 168 },
             { type: 'scout', x: 1090, y: 372 },
+          ],
+        },
+      ],
+    },
+    {
+      // The lane thickens on the turret's flank: this line lands while three
+      // others are still on screen, so the middle of the approach is never
+      // short of targets.
+      time: 11.3,
+      actions: [
+        {
+          type: 'spawnEnemies',
+          enemies: [
+            { type: 'scout', x: 1032, y: 156 },
+            { type: 'drone', x: 1120, y: 300, options: { speed: 232 } },
+            { type: 'zigzag', x: 1210, y: 446, options: { phase: 2.7 } },
           ],
         },
       ],
@@ -84,6 +139,36 @@ window.VoidLancerLevel3StageData = {
             { type: 'drone', x: 1050, y: 210, options: { speed: 230 } },
             { type: 'drone', x: 1120, y: 330, options: { speed: 236 } },
             { type: 'drone', x: 1190, y: 442, options: { speed: 242 } },
+          ],
+        },
+      ],
+    },
+    {
+      // The drone column is still crossing when the next line enters, so the
+      // approach never opens up between the two.
+      time: 15.4,
+      actions: [
+        {
+          type: 'spawnEnemies',
+          enemies: [
+            { type: 'drone', x: 1058, y: 146, options: { speed: 228 } },
+            { type: 'scout', x: 1146, y: 294 },
+            { type: 'zigzag', x: 1232, y: 442, options: { phase: 0.9 } },
+          ],
+        },
+      ],
+    },
+    {
+      // The double drop before the close: the pilot meets two lines back to
+      // back, so the last resistance lands on a lane that is already crowded.
+      time: 16.9,
+      actions: [
+        {
+          type: 'spawnEnemies',
+          enemies: [
+            { type: 'scout', x: 1028, y: 172 },
+            { type: 'drone', x: 1116, y: 316, options: { speed: 238 } },
+            { type: 'zigzag', x: 1204, y: 450, options: { phase: 3.4 } },
           ],
         },
       ],

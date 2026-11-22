@@ -380,7 +380,10 @@ test('the Solar Altar lane is bounded by its waves and ends on the Warden, not a
     data.waveTimeline.filter((wave) => (wave.actions || []).some((action) => action.type === 'spawnEnemies')),
     (wave) => wave.time,
   );
-  assert.deepEqual(spawnTimes, [1.5, 5, 9.5, 13, 18.5],
+  for (const beat of [1.5, 5, 9.5, 13, 18.5]) {
+    assert.ok(spawnTimes.includes(beat), `the authored ${beat}s beat still spawns`);
+  }
+  assert.equal(spawnTimes[spawnTimes.length - 1], 18.5,
     'the lane stops spawning after 18.5s');
 
   const queue = data.waveTimeline.find((wave) =>
@@ -406,6 +409,179 @@ test('the Solar Altar lane is bounded by its waves and ends on the Warden, not a
       }
     }
   }
+});
+
+// Every hull the lane ships, paired with the wave it lands on, plus the wave
+// times themselves.
+function laneHulls(data) {
+  const hulls = [];
+  const spawnTimes = [];
+  for (const wave of data.waveTimeline || []) {
+    const spawns = (wave.actions || []).filter((action) => action.type === 'spawnEnemies');
+    if (!spawns.length) continue;
+    spawnTimes.push(wave.time);
+    for (const action of spawns) {
+      for (const enemy of action.enemies) hulls.push({ time: wave.time, enemy });
+    }
+  }
+  return { hulls, spawnTimes };
+}
+
+// The difficulty ramp lives entirely in the wave data: more hulls, a tighter
+// cadence and waves that overlap, with hit points, banners and the Warden
+// queue left alone. Count and timing assertions only - these are data checks,
+// not playtest results.
+test('the Solar Altar ramp doubles the hulls on a cadence that never leaves a 2.5s hole', () => {
+  const { hulls, spawnTimes } = laneHulls(laneData());
+
+  assert.deepEqual(spawnTimes, [1.5, 3.2, 5, 7.4, 9.5, 11.3, 13, 15.4, 16.9, 18.5],
+    'the five authored beats still spawn in order, with a ramped wave between them');
+  assert.equal(hulls.length, 31, 'the lane ships 31 hulls against the original 16');
+  assert.deepEqual(hulls.filter(({ enemy }) => enemy.type === 'turret').map(({ time }) => time), [9.5],
+    'the lane keeps its single slow turret - a later one would still be drifting down-lane when the queue fires');
+
+  let widest = 0;
+  for (let i = 1; i < spawnTimes.length; i += 1) {
+    widest = Math.max(widest, spawnTimes[i] - spawnTimes[i - 1]);
+  }
+  assert.ok(widest <= 2.5, `no gap between waves runs longer than ${widest}s (it was 5.5s)`);
+
+  // Overlap, measured the way the lane drains: a hull stays until it has
+  // crossed off the left edge, at the cruise speed its own wave declares.
+  const cruise = { scout: 170, zigzag: 170, turret: 92, drone: 230 };
+  let mostHulls = 0;
+  let mostWaves = 0;
+  for (let t = 0; t <= 26.5; t += 0.1) {
+    const alive = hulls.filter(({ time, enemy }) =>
+      t >= time && t < time + (enemy.x + 120) / (enemy.options?.speed ?? cruise[enemy.type]));
+    mostHulls = Math.max(mostHulls, alive.length);
+    mostWaves = Math.max(mostWaves, new Set(alive.map((hull) => hull.time)).size);
+  }
+  assert.ok(mostHulls >= 12, `up to ${mostHulls} hulls share the lane at once (it was 7)`);
+  assert.ok(mostWaves >= 4, `up to ${mostWaves} waves overlap at once (it was 2)`);
+});
+
+test('the ramp adds hulls, never hit points, and no new unit type', () => {
+  const { hulls } = laneHulls(laneData());
+
+  for (const { enemy } of hulls) {
+    assert.ok(!(enemy.options && 'hp' in enemy.options),
+      `${enemy.type} at x=${enemy.x} ships with its stock hull`);
+  }
+
+  // ...and the stock hull is what actually comes out of spawnEnemy, options
+  // and all, so no override is hiding behind a key this data check misses.
+  const r = altarScene();
+  const stock = { scout: 1, zigzag: 1, turret: 3, drone: 2 };
+  const spawnEnemy = Object.getPrototypeOf(r.scene).spawnEnemy;
+  for (const { enemy } of hulls) {
+    const spawned = spawnEnemy.call(r.scene, enemy.type, enemy.x, enemy.y, enemy.options || {});
+    assert.equal(spawned.maxHp, stock[enemy.type], `${enemy.type} spawns at its stock ${stock[enemy.type]} hp`);
+    assert.equal(spawned.hp, spawned.maxHp, 'and starts undamaged');
+  }
+  assert.deepEqual([...new Set(hulls.map(({ enemy }) => enemy.type))].sort(),
+    ['drone', 'scout', 'turret', 'zigzag'], 'the ramp only uses the four hulls the sortie already ships');
+
+  assert.equal(A.DEFAULTS.hp, 420, 'the Warden keeps its hit points');
+  assert.equal(A.DEFAULTS.collisionRadius, 72, 'and its hitbox');
+  assert.equal(A.DEFAULTS.displaySize, 176, 'and its hull size');
+});
+
+// The queue is what holds the Warden back, so the ramp has to prove the lane
+// can still drain on its own: no hull may be drifting when the queue fires,
+// and the Warden lands right behind the clear instead of waiting on a slow
+// hull. Driven through the real update loop with the pilot stubbed out.
+test('the Warden waits for the ramped lane to clear, then lands without a long gap', () => {
+  const r = altarScene();
+  const scene = r.scene;
+  prepareAltarLoop(scene);
+
+  const spawned = [];
+  const spawnEnemy = Object.getPrototypeOf(scene).spawnEnemy;
+  scene.spawnEnemy = (...args) => {
+    spawned.push(args);
+    return spawnEnemy.apply(scene, args);
+  };
+
+  let queueAt = null;
+  let clearedAt = null;
+  let wardenAt = null;
+  let hullsAtSpawn = null;
+  for (let i = 0; i < 400 && wardenAt === null; i += 1) {
+    scene.time.now += 100;
+    scene.update(0, 100);
+    if (scene.state.bossQueued && queueAt === null) queueAt = scene.state.time;
+    if (queueAt !== null && clearedAt === null && scene.state.enemies.length === 0) {
+      clearedAt = scene.state.time;
+    }
+    if (scene.state.boss?.kind === 'altarWarden') {
+      wardenAt = scene.state.time;
+      hullsAtSpawn = scene.state.enemies.length;
+    }
+  }
+
+  assert.equal(spawned.length, 31, 'every hull in the ramped lane shipped');
+  assert.ok(Math.abs(queueAt - 25) < 1e-6, `the queue still fires at 25.0s (fired at ${queueAt}s)`);
+  assert.ok(clearedAt !== null, 'the lane drains on its own with no pilot input');
+  assert.ok(clearedAt >= queueAt, `the last hull leaves at ${clearedAt}s, after the queue fires`);
+  assert.ok(wardenAt >= clearedAt, `the Warden lands at ${wardenAt}s, after the lane is clear`);
+  assert.equal(hullsAtSpawn, 0, 'nothing is left on the field when the Warden arrives');
+  assert.ok(wardenAt <= 27.5, `the Warden lands at ${wardenAt}s, not held up behind a slow hull`);
+});
+
+// Formation check: at no instant may the hulls in one column stack the full
+// height of the playfield, or the pilot would have nowhere to sit. Positions
+// come from the lane's own movement rules, so this reads the authored
+// formation rather than a guess about it. It is a data/formation check, not a
+// playtest result.
+test('the ramped lane never seals the column the pilot has to fly', () => {
+  const r = altarScene();
+  const scene = r.scene;
+  prepareAltarLoop(scene);
+
+  // Real hulls on the field: the harness stubs spawnEnemy to a recorder, so
+  // swap it for the prototype method to get state.enemies populated.
+  const spawnEnemy = Object.getPrototypeOf(scene).spawnEnemy;
+  scene.spawnEnemy = (...args) => spawnEnemy.apply(scene, args);
+
+  const TOP = 40;
+  const BOTTOM = 500;
+  let tightest = Infinity;
+  let widestBand = 0;
+  let mostLive = 0;
+  for (let i = 0; i < 270; i += 1) {
+    scene.time.now += 100;
+    scene.update(0, 100);
+    const live = scene.state.enemies;
+    mostLive = Math.max(mostLive, live.length);
+    for (const anchor of live) {
+      const band = live.filter((other) => Math.abs(other.x - anchor.x) <= 100);
+      if (band.length < 2) continue;
+      widestBand = Math.max(widestBand, band.length);
+      // Each hull blocks the vertical slice a Lancer 46px tall cannot occupy.
+      const blocked = band
+        .map((hull) => [hull.y - hull.radius - 23, hull.y + hull.radius + 23])
+        .sort((a, b) => a[0] - b[0]);
+      let cursor = TOP;
+      let gap = 0;
+      for (const [lo, hi] of blocked) {
+        if (lo > cursor) gap = Math.max(gap, lo - cursor);
+        cursor = Math.max(cursor, hi);
+      }
+      gap = Math.max(gap, BOTTOM - cursor);
+      tightest = Math.min(tightest, gap);
+    }
+  }
+
+  // Non-vacuous: the run has to have seen a crowded lane for any of this to
+  // mean anything.
+  assert.ok(mostLive >= 12, `up to ${mostLive} hulls were in the lane at once (the original lane peaked at 7)`);
+  assert.ok(widestBand >= 4, `the column check really stacked ${widestBand} hulls together`);
+
+  assert.ok(tightest >= 30,
+    `the tightest column still leaves ${tightest}px of safe vertical room for the pilot (the original lane's tightest was 40px)`);
+  assert.ok(widestBand <= 6,
+    `no column ever stacks more than ${widestBand} hulls inside 100px (the original lane's worst was 5)`);
 });
 
 test('the Solar Altar banners teach the tell, land alone and fit the plate', () => {
@@ -859,5 +1035,5 @@ test('the Solar Altar lane runs to the Warden and clears on the kill', () => {
     'WARDEN CORE // OVERDRIVE',
   ], 'the lane says what it scheduled, in order, and the core overdrives on the killing blow');
   assert.equal(r.overlay().button, 'Replay the Run');
-  assert.equal(spawned.length, 16, 'every wave in the lane spawned once');
+  assert.equal(spawned.length, 31, 'every wave in the lane spawned once');
 });

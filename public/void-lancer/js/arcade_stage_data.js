@@ -54,26 +54,40 @@ window.VoidLancerArcadeStageData = {
           ],
         },
         {
-          time: 2.5,
+          time: 2,
           actions: [
             {
               type: 'spawnEnemies',
               enemies: [
-                { type: 'scout', x: 1000, y: 120 },
-                { type: 'scout', x: 1075, y: 405 },
-                { type: 'scout', x: 1150, y: 150 },
+                { type: 'scout', x: 995, y: 125 },
+                { type: 'scout', x: 1040, y: 410 },
+                { type: 'scout', x: 1085, y: 150 },
+                { type: 'scout', x: 1130, y: 400 },
               ],
             },
           ],
         },
         {
-          time: 6.5,
+          time: 5,
           actions: [
             {
               type: 'spawnEnemies',
               enemies: [
-                { type: 'scout', x: 1010, y: 415 },
-                { type: 'scout', x: 1090, y: 130 },
+                { type: 'scout', x: 1005, y: 405 },
+                { type: 'scout', x: 1065, y: 130 },
+              ],
+            },
+          ],
+        },
+        {
+          time: 8.5,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                { type: 'scout', x: 995, y: 140 },
+                { type: 'scout', x: 1045, y: 400 },
+                { type: 'scout', x: 1095, y: 155 },
               ],
             },
           ],
@@ -92,24 +106,48 @@ window.VoidLancerArcadeStageData = {
               enemies: [
                 {
                   type: 'turret',
-                  x: 1130,
+                  x: 1010,
                   y: 275,
                   options: { speed: 84, fireCooldown: 1.4 },
                 },
-                { type: 'scout', x: 1020, y: 140 },
-                { type: 'scout', x: 1095, y: 410 },
+                { type: 'scout', x: 1060, y: 135 },
+                { type: 'scout', x: 1115, y: 410 },
+                { type: 'scout', x: 1165, y: 160 },
               ],
             },
           ],
         },
         {
-          time: 18,
+          time: 17,
           actions: [
             {
               type: 'spawnEnemies',
               enemies: [
-                { type: 'scout', x: 1005, y: 125 },
-                { type: 'scout', x: 1075, y: 410 },
+                { type: 'scout', x: 995, y: 410 },
+                { type: 'scout', x: 1055, y: 145 },
+              ],
+            },
+          ],
+        },
+        {
+          time: 19.5,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'drone',
+                  x: 1015,
+                  y: 165,
+                  options: { speed: 218 },
+                },
+                {
+                  type: 'drone',
+                  x: 1085,
+                  y: 355,
+                  options: { speed: 224 },
+                },
+                { type: 'scout', x: 1145, y: 130 },
               ],
             },
           ],
@@ -118,22 +156,28 @@ window.VoidLancerArcadeStageData = {
           time: 23,
           actions: [
             { type: 'announce', text: 'FINAL WAVE // HOLD BOTH LANES', ttl: 2, kind: 'warning' },
+          ],
+        },
+        {
+          time: 23.5,
+          actions: [
             {
               type: 'spawnEnemies',
               enemies: [
                 {
                   type: 'drone',
-                  x: 1040,
-                  y: 165,
+                  x: 1005,
+                  y: 160,
                   options: { speed: 218 },
                 },
                 {
                   type: 'drone',
-                  x: 1115,
-                  y: 355,
+                  x: 1075,
+                  y: 350,
                   options: { speed: 224 },
                 },
-                { type: 'scout', x: 1185, y: 125 },
+                { type: 'scout', x: 1145, y: 405 },
+                { type: 'scout', x: 1195, y: 130 },
               ],
             },
           ],
@@ -144,8 +188,9 @@ window.VoidLancerArcadeStageData = {
             {
               type: 'spawnEnemies',
               enemies: [
-                { type: 'scout', x: 1015, y: 135 },
-                { type: 'scout', x: 1095, y: 400 },
+                { type: 'scout', x: 995, y: 135 },
+                { type: 'scout', x: 1055, y: 400 },
+                { type: 'scout', x: 1115, y: 150 },
                 { type: 'scout', x: 1175, y: 265 },
               ],
             },
@@ -167,7 +212,35 @@ window.VoidLancerArcadeStageData = {
           ],
         },
         {
-          time: 2.5,
+          time: 2,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'zigzag',
+                  x: 1000,
+                  y: 150,
+                  options: { phase: 0, speed: 160 },
+                },
+                {
+                  type: 'zigzag',
+                  x: 1065,
+                  y: 395,
+                  options: { phase: 3.14, speed: 160 },
+                },
+                {
+                  type: 'zigzag',
+                  x: 1130,
+                  y: 255,
+                  options: { phase: 1.6, speed: 160 },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          time: 5.5,
           actions: [
             {
               type: 'spawnEnemies',
@@ -175,37 +248,50 @@ window.VoidLancerArcadeStageData = {
                 {
                   type: 'zigzag',
                   x: 1010,
-                  y: 150,
-                  options: { phase: 0, speed: 160 },
+                  y: 390,
+                  options: { phase: 4.7, speed: 160 },
                 },
                 {
                   type: 'zigzag',
-                  x: 1085,
-                  y: 395,
-                  options: { phase: 3.14, speed: 160 },
+                  x: 1075,
+                  y: 155,
+                  options: { phase: 1, speed: 160 },
+                },
+                {
+                  type: 'zigzag',
+                  x: 1140,
+                  y: 300,
+                  options: { phase: 2.4, speed: 160 },
                 },
               ],
             },
           ],
         },
         {
-          time: 6.5,
+          time: 9.5,
           actions: [
             {
               type: 'spawnEnemies',
               enemies: [
                 {
                   type: 'zigzag',
-                  x: 1020,
-                  y: 385,
-                  options: { phase: 1.6, speed: 160 },
+                  x: 1000,
+                  y: 145,
+                  options: { phase: 0.4, speed: 160 },
                 },
                 {
                   type: 'zigzag',
-                  x: 1105,
-                  y: 160,
-                  options: { phase: 4.7, speed: 160 },
+                  x: 1065,
+                  y: 400,
+                  options: { phase: 3.5, speed: 160 },
                 },
+                {
+                  type: 'zigzag',
+                  x: 1130,
+                  y: 250,
+                  options: { phase: 1.9, speed: 160 },
+                },
+                { type: 'scout', x: 1185, y: 410 },
               ],
             },
           ],
@@ -224,52 +310,79 @@ window.VoidLancerArcadeStageData = {
               enemies: [
                 {
                   type: 'zigzag',
-                  x: 1005,
+                  x: 1000,
                   y: 140,
-                  options: { phase: 0.4, speed: 160 },
+                  options: { phase: 0.2, speed: 160 },
                 },
                 {
                   type: 'zigzag',
-                  x: 1075,
+                  x: 1055,
                   y: 400,
-                  options: { phase: 3.5, speed: 160 },
+                  options: { phase: 3.3, speed: 160 },
                 },
                 {
                   type: 'zigzag',
-                  x: 1150,
+                  x: 1110,
                   y: 255,
-                  options: { phase: 1.9, speed: 160 },
+                  options: { phase: 1.5, speed: 160 },
                 },
-                { type: 'scout', x: 1115, y: 410 },
+                {
+                  type: 'zigzag',
+                  x: 1165,
+                  y: 150,
+                  options: { phase: 4.7, speed: 160 },
+                },
               ],
             },
           ],
         },
         {
-          time: 18,
+          time: 17.5,
           actions: [
             {
               type: 'spawnEnemies',
               enemies: [
                 {
                   type: 'zigzag',
-                  x: 1010,
+                  x: 1005,
                   y: 395,
                   options: { phase: 2.6, speed: 160 },
                 },
                 {
                   type: 'zigzag',
-                  x: 1085,
+                  x: 1070,
                   y: 145,
                   options: { phase: 5.7, speed: 160 },
                 },
+                { type: 'scout', x: 1195, y: 120 },
+              ],
+            },
+          ],
+        },
+        {
+          time: 21,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
                 {
                   type: 'zigzag',
-                  x: 1160,
-                  y: 300,
-                  options: { phase: 0.9, speed: 160 },
+                  x: 1000,
+                  y: 150,
+                  options: { phase: 0.6, speed: 160 },
                 },
-                { type: 'scout', x: 1225, y: 110 },
+                {
+                  type: 'zigzag',
+                  x: 1065,
+                  y: 400,
+                  options: { phase: 3.7, speed: 160 },
+                },
+                {
+                  type: 'zigzag',
+                  x: 1130,
+                  y: 255,
+                  options: { phase: 2, speed: 160 },
+                },
               ],
             },
           ],
@@ -288,18 +401,24 @@ window.VoidLancerArcadeStageData = {
               enemies: [
                 {
                   type: 'drone',
-                  x: 1030,
+                  x: 1015,
                   y: 175,
                   options: { speed: 220 },
                 },
                 {
                   type: 'drone',
-                  x: 1105,
+                  x: 1080,
                   y: 345,
                   options: { speed: 226 },
                 },
-                { type: 'scout', x: 1180, y: 410 },
-                { type: 'scout', x: 1250, y: 130 },
+                { type: 'scout', x: 1145, y: 410 },
+                { type: 'scout', x: 1200, y: 130 },
+                {
+                  type: 'zigzag',
+                  x: 1255,
+                  y: 265,
+                  options: { phase: 1.5, speed: 160 },
+                },
               ],
             },
           ],
@@ -318,16 +437,17 @@ window.VoidLancerArcadeStageData = {
                 },
                 {
                   type: 'zigzag',
-                  x: 1085,
+                  x: 1075,
                   y: 400,
                   options: { phase: 3.3, speed: 160 },
                 },
                 {
                   type: 'zigzag',
-                  x: 1165,
+                  x: 1145,
                   y: 260,
                   options: { phase: 1.5, speed: 160 },
                 },
+                { type: 'scout', x: 1210, y: 415 },
               ],
             },
           ],
@@ -348,31 +468,52 @@ window.VoidLancerArcadeStageData = {
           ],
         },
         {
-          time: 2.5,
+          time: 2,
           actions: [
             {
               type: 'spawnEnemies',
               enemies: [
-                { type: 'scout', x: 1010, y: 140 },
-                { type: 'scout', x: 1085, y: 400 },
-                { type: 'scout', x: 1160, y: 175 },
+                { type: 'scout', x: 995, y: 140 },
+                { type: 'scout', x: 1050, y: 400 },
+                { type: 'scout', x: 1105, y: 175 },
+                { type: 'scout', x: 1160, y: 395 },
               ],
             },
           ],
         },
         {
-          time: 7,
+          time: 5.5,
           actions: [
             {
               type: 'spawnEnemies',
               enemies: [
                 {
                   type: 'turret',
-                  x: 1150,
+                  x: 1010,
                   y: 180,
                   options: { speed: 84, fireCooldown: 1.4 },
                 },
-                { type: 'scout', x: 1060, y: 395 },
+                { type: 'scout', x: 1065, y: 395 },
+                { type: 'scout', x: 1120, y: 150 },
+              ],
+            },
+          ],
+        },
+        {
+          time: 9.5,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                { type: 'scout', x: 995, y: 410 },
+                { type: 'scout', x: 1055, y: 155 },
+                { type: 'scout', x: 1115, y: 405 },
+                {
+                  type: 'drone',
+                  x: 1175,
+                  y: 265,
+                  options: { speed: 222 },
+                },
               ],
             },
           ],
@@ -391,45 +532,65 @@ window.VoidLancerArcadeStageData = {
               enemies: [
                 {
                   type: 'turret',
-                  x: 1225,
+                  x: 1015,
                   y: 340,
                   options: { speed: 88, fireCooldown: 1.6 },
                 },
                 {
                   type: 'drone',
-                  x: 1150,
+                  x: 1075,
                   y: 430,
                   options: { speed: 226 },
                 },
-                { type: 'scout', x: 1080, y: 130 },
+                { type: 'scout', x: 1130, y: 130 },
+                { type: 'scout', x: 1185, y: 395 },
               ],
             },
           ],
         },
         {
-          time: 18.5,
+          time: 17.5,
           actions: [
             {
               type: 'spawnEnemies',
               enemies: [
                 {
                   type: 'drone',
-                  x: 1035,
+                  x: 1005,
                   y: 150,
                   options: { speed: 222 },
                 },
                 {
                   type: 'drone',
-                  x: 1120,
+                  x: 1075,
                   y: 380,
                   options: { speed: 230 },
                 },
                 {
                   type: 'zigzag',
-                  x: 1195,
+                  x: 1145,
                   y: 265,
                   options: { phase: 1.2, speed: 165 },
                 },
+                { type: 'scout', x: 1210, y: 410 },
+              ],
+            },
+          ],
+        },
+        {
+          time: 20.5,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'turret',
+                  x: 1020,
+                  y: 270,
+                  options: { speed: 88, fireCooldown: 1.5 },
+                },
+                { type: 'scout', x: 1075, y: 415 },
+                { type: 'scout', x: 1130, y: 150 },
               ],
             },
           ],
@@ -448,40 +609,55 @@ window.VoidLancerArcadeStageData = {
               enemies: [
                 {
                   type: 'turret',
-                  x: 1165,
+                  x: 1025,
                   y: 255,
                   options: { speed: 92, fireCooldown: 1.2 },
                 },
                 {
                   type: 'drone',
-                  x: 1050,
+                  x: 1085,
                   y: 120,
                   options: { speed: 232 },
                 },
                 {
                   type: 'drone',
-                  x: 1130,
+                  x: 1150,
                   y: 420,
                   options: { speed: 236 },
+                },
+                { type: 'scout', x: 1160, y: 150 },
+                { type: 'scout', x: 1210, y: 270 },
+              ],
+            },
+          ],
+        },
+        {
+          time: 28.5,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                { type: 'scout', x: 1000, y: 150 },
+                { type: 'scout', x: 1065, y: 395 },
+                {
+                  type: 'zigzag',
+                  x: 1135,
+                  y: 270,
+                  options: { phase: 0.7, speed: 165 },
                 },
               ],
             },
           ],
         },
         {
-          time: 29,
+          time: 31.5,
           actions: [
             {
               type: 'spawnEnemies',
               enemies: [
-                { type: 'scout', x: 1025, y: 150 },
-                { type: 'scout', x: 1110, y: 395 },
-                {
-                  type: 'zigzag',
-                  x: 1195,
-                  y: 270,
-                  options: { phase: 0.7, speed: 165 },
-                },
+                { type: 'scout', x: 995, y: 410 },
+                { type: 'scout', x: 1055, y: 165 },
+                { type: 'scout', x: 1115, y: 400 },
               ],
             },
           ],
@@ -536,6 +712,18 @@ window.VoidLancerArcadeStageData = {
           ],
         },
         {
+          time: 4.4,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                { type: 'scout', x: 1030, y: 264 },
+                { type: 'scout', x: 1110, y: 312 },
+              ],
+            },
+          ],
+        },
+        {
           time: 6.2,
           actions: [
             {
@@ -543,6 +731,34 @@ window.VoidLancerArcadeStageData = {
               enemies: [
                 { type: 'scout', x: 1015, y: 128 },
                 { type: 'scout', x: 1095, y: 168 },
+              ],
+            },
+          ],
+        },
+        {
+          time: 7.9,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'drone',
+                  x: 1000,
+                  y: 454,
+                  options: { speed: 244, phase: 1.2 },
+                },
+                {
+                  type: 'drone',
+                  x: 1070,
+                  y: 412,
+                  options: { speed: 250, phase: 2.8 },
+                },
+                {
+                  type: 'drone',
+                  x: 1140,
+                  y: 370,
+                  options: { speed: 256, phase: 4.4 },
+                },
               ],
             },
           ],
@@ -583,6 +799,18 @@ window.VoidLancerArcadeStageData = {
           ],
         },
         {
+          time: 11.7,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                { type: 'scout', x: 1035, y: 266 },
+                { type: 'scout', x: 1115, y: 312 },
+              ],
+            },
+          ],
+        },
+        {
           time: 13.6,
           actions: [
             {
@@ -611,6 +839,18 @@ window.VoidLancerArcadeStageData = {
           ],
         },
         {
+          time: 15.7,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                { type: 'scout', x: 1045, y: 120 },
+                { type: 'scout', x: 1125, y: 166 },
+              ],
+            },
+          ],
+        },
+        {
           time: 18,
           actions: [
             {
@@ -618,6 +858,40 @@ window.VoidLancerArcadeStageData = {
               enemies: [
                 { type: 'scout', x: 1035, y: 110 },
                 { type: 'scout', x: 1115, y: 452 },
+              ],
+            },
+          ],
+        },
+        {
+          time: 19.8,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'drone',
+                  x: 995,
+                  y: 116,
+                  options: { speed: 246, phase: 0.4 },
+                },
+                {
+                  type: 'drone',
+                  x: 1065,
+                  y: 174,
+                  options: { speed: 252, phase: 2 },
+                },
+                {
+                  type: 'drone',
+                  x: 1135,
+                  y: 424,
+                  options: { speed: 258, phase: 3.6 },
+                },
+                {
+                  type: 'drone',
+                  x: 1205,
+                  y: 462,
+                  options: { speed: 264, phase: 5.2 },
+                },
               ],
             },
           ],
@@ -646,6 +920,46 @@ window.VoidLancerArcadeStageData = {
                   x: 1125,
                   y: 420,
                   options: { speed: 254, phase: 3.4 },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          time: 23.8,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                { type: 'scout', x: 1025, y: 120 },
+                { type: 'scout', x: 1105, y: 164 },
+              ],
+            },
+          ],
+        },
+        {
+          time: 26.2,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'drone',
+                  x: 995,
+                  y: 456,
+                  options: { speed: 244, phase: 0.8 },
+                },
+                {
+                  type: 'drone',
+                  x: 1065,
+                  y: 414,
+                  options: { speed: 250, phase: 2.4 },
+                },
+                {
+                  type: 'drone',
+                  x: 1135,
+                  y: 372,
+                  options: { speed: 256, phase: 4 },
                 },
               ],
             },
@@ -736,6 +1050,18 @@ window.VoidLancerArcadeStageData = {
           ],
         },
         {
+          time: 5.9,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                { type: 'scout', x: 1042, y: 116 },
+                { type: 'scout', x: 1122, y: 162 },
+              ],
+            },
+          ],
+        },
+        {
           time: 7.4,
           actions: [
             {
@@ -767,6 +1093,24 @@ window.VoidLancerArcadeStageData = {
           time: 9.6,
           actions: [
             { type: 'announce', text: 'BATTERY SHIFT // BOTTOM TRACKS HOT', ttl: 2.4, kind: 'notice' },
+          ],
+        },
+        {
+          time: 11,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'turret',
+                  x: 1148,
+                  y: 94,
+                  options: { speed: 86, phase: 2.1, fireCooldown: 0.95 },
+                },
+                { type: 'scout', x: 1044, y: 266 },
+                { type: 'scout', x: 1124, y: 312 },
+              ],
+            },
           ],
         },
         {
@@ -822,6 +1166,24 @@ window.VoidLancerArcadeStageData = {
           ],
         },
         {
+          time: 19,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'turret',
+                  x: 1155,
+                  y: 444,
+                  options: { speed: 88, phase: 3, fireCooldown: 1 },
+                },
+                { type: 'scout', x: 1054, y: 268 },
+                { type: 'scout', x: 1134, y: 314 },
+              ],
+            },
+          ],
+        },
+        {
           time: 20.4,
           actions: [
             { type: 'announce', text: 'BATTERY SHIFT // TOP TRACKS HOT', ttl: 2.4, kind: 'notice' },
@@ -830,6 +1192,18 @@ window.VoidLancerArcadeStageData = {
               enemies: [
                 { type: 'scout', x: 1060, y: 120 },
                 { type: 'scout', x: 1140, y: 166 },
+              ],
+            },
+          ],
+        },
+        {
+          time: 21.8,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                { type: 'scout', x: 1056, y: 414 },
+                { type: 'scout', x: 1136, y: 456 },
               ],
             },
           ],
@@ -851,6 +1225,24 @@ window.VoidLancerArcadeStageData = {
           ],
         },
         {
+          time: 24.8,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'turret',
+                  x: 1152,
+                  y: 94,
+                  options: { speed: 90, phase: 2.6, fireCooldown: 0.85 },
+                },
+                { type: 'scout', x: 1054, y: 112 },
+                { type: 'scout', x: 1134, y: 160 },
+              ],
+            },
+          ],
+        },
+        {
           time: 26,
           actions: [
             { type: 'announce', text: 'BATTERY SHIFT // BOTH TRACKS HOT', ttl: 2.2, kind: 'warning' },
@@ -865,6 +1257,24 @@ window.VoidLancerArcadeStageData = {
                 { type: 'scout', x: 1050, y: 110 },
                 { type: 'scout', x: 1130, y: 158 },
                 { type: 'scout', x: 1210, y: 206 },
+              ],
+            },
+          ],
+        },
+        {
+          time: 29.2,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'turret',
+                  x: 1158,
+                  y: 446,
+                  options: { speed: 88, phase: 1.5, fireCooldown: 0.95 },
+                },
+                { type: 'scout', x: 1058, y: 412 },
+                { type: 'scout', x: 1138, y: 454 },
               ],
             },
           ],
@@ -935,6 +1345,41 @@ window.VoidLancerArcadeStageData = {
           ],
         },
         {
+          time: 6.6,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                { type: 'scout', x: 1015, y: 110 },
+                { type: 'scout', x: 1095, y: 158 },
+                { type: 'scout', x: 1175, y: 416 },
+              ],
+            },
+          ],
+        },
+        {
+          time: 8.4,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'zigzag',
+                  x: 1290,
+                  y: 250,
+                  options: { phase: 0.7, speed: 160 },
+                },
+                {
+                  type: 'zigzag',
+                  x: 1395,
+                  y: 310,
+                  options: { phase: 3.9, speed: 160 },
+                },
+              ],
+            },
+          ],
+        },
+        {
           time: 9.6,
           actions: [
             { type: 'announce', text: 'CROSS TRAFFIC // WEAVE THE GAP', ttl: 2.4, kind: 'notice' },
@@ -976,6 +1421,20 @@ window.VoidLancerArcadeStageData = {
           ],
         },
         {
+          time: 14.6,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                { type: 'scout', x: 1030, y: 112 },
+                { type: 'scout', x: 1110, y: 162 },
+                { type: 'scout', x: 1190, y: 420 },
+                { type: 'scout', x: 1270, y: 466 },
+              ],
+            },
+          ],
+        },
+        {
           time: 16.4,
           actions: [
             {
@@ -983,6 +1442,28 @@ window.VoidLancerArcadeStageData = {
               enemies: [
                 { type: 'scout', x: 1040, y: 110 },
                 { type: 'scout', x: 1120, y: 160 },
+              ],
+            },
+          ],
+        },
+        {
+          time: 18.6,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'zigzag',
+                  x: 1305,
+                  y: 258,
+                  options: { phase: 1.4, speed: 160 },
+                },
+                {
+                  type: 'zigzag',
+                  x: 1410,
+                  y: 302,
+                  options: { phase: 4.6, speed: 160 },
+                },
               ],
             },
           ],
@@ -1023,6 +1504,42 @@ window.VoidLancerArcadeStageData = {
                   x: 1425,
                   y: 300,
                   options: { phase: 3.14, speed: 160 },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          time: 25,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                { type: 'scout', x: 1035, y: 110 },
+                { type: 'scout', x: 1115, y: 158 },
+                { type: 'scout', x: 1195, y: 414 },
+                { type: 'scout', x: 1275, y: 462 },
+              ],
+            },
+          ],
+        },
+        {
+          time: 26.8,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'zigzag',
+                  x: 1315,
+                  y: 254,
+                  options: { phase: 0.4, speed: 160 },
+                },
+                {
+                  type: 'zigzag',
+                  x: 1420,
+                  y: 306,
+                  options: { phase: 3.5, speed: 160 },
                 },
               ],
             },
@@ -1116,14 +1633,36 @@ window.VoidLancerArcadeStageData = {
                 {
                   type: 'turret',
                   x: 1180,
-                  y: 140,
+                  y: 160,
                   options: { speed: 75, phase: 0.4, fireCooldown: 0.9 },
                 },
                 {
                   type: 'turret',
-                  x: 1240,
-                  y: 400,
+                  x: 1250,
+                  y: 300,
                   options: { speed: 75, phase: 2.6, fireCooldown: 1.1 },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          time: 2.8,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'drone',
+                  x: 1140,
+                  y: 450,
+                  options: { speed: 240, phase: 0.2 },
+                },
+                {
+                  type: 'drone',
+                  x: 1320,
+                  y: 160,
+                  options: { speed: 250, phase: 2.8 },
                 },
               ],
             },
@@ -1137,15 +1676,43 @@ window.VoidLancerArcadeStageData = {
               enemies: [
                 {
                   type: 'drone',
-                  x: 1120,
-                  y: 210,
+                  x: 1130,
+                  y: 300,
                   options: { speed: 240, phase: 0.2 },
                 },
                 {
                   type: 'drone',
-                  x: 1300,
-                  y: 330,
+                  x: 1310,
+                  y: 450,
                   options: { speed: 260, phase: 2.8 },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          time: 6.2,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'scout',
+                  x: 1160,
+                  y: 160,
+                  options: { speed: 185 },
+                },
+                {
+                  type: 'scout',
+                  x: 1270,
+                  y: 300,
+                  options: { speed: 185 },
+                },
+                {
+                  type: 'scout',
+                  x: 1380,
+                  y: 450,
+                  options: { speed: 185 },
                 },
               ],
             },
@@ -1166,20 +1733,48 @@ window.VoidLancerArcadeStageData = {
                 {
                   type: 'turret',
                   x: 1360,
-                  y: 280,
+                  y: 160,
                   options: { speed: 85, phase: 1.2, fireCooldown: 0.8 },
                 },
                 {
                   type: 'scout',
                   x: 1150,
-                  y: 110,
+                  y: 300,
                   options: { speed: 180 },
                 },
                 {
                   type: 'scout',
-                  x: 1150,
-                  y: 460,
+                  x: 1250,
+                  y: 450,
                   options: { speed: 180 },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          time: 9.6,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'drone',
+                  x: 1150,
+                  y: 160,
+                  options: { speed: 245, phase: 1 },
+                },
+                {
+                  type: 'drone',
+                  x: 1300,
+                  y: 300,
+                  options: { speed: 245, phase: 3.4 },
+                },
+                {
+                  type: 'drone',
+                  x: 1440,
+                  y: 450,
+                  options: { speed: 245, phase: 5.2 },
                 },
               ],
             },
@@ -1199,15 +1794,43 @@ window.VoidLancerArcadeStageData = {
                 },
                 {
                   type: 'drone',
-                  x: 1270,
+                  x: 1280,
                   y: 300,
                   options: { speed: 245, phase: 3.4 },
                 },
                 {
                   type: 'drone',
-                  x: 1410,
-                  y: 440,
+                  x: 1420,
+                  y: 450,
                   options: { speed: 245, phase: 5.2 },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          time: 13.4,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'zigzag',
+                  x: 1170,
+                  y: 160,
+                  options: { speed: 185, phase: 0.7 },
+                },
+                {
+                  type: 'zigzag',
+                  x: 1330,
+                  y: 300,
+                  options: { speed: 185, phase: 3.4 },
+                },
+                {
+                  type: 'scout',
+                  x: 1250,
+                  y: 450,
+                  options: { speed: 190 },
                 },
               ],
             },
@@ -1228,20 +1851,48 @@ window.VoidLancerArcadeStageData = {
                 {
                   type: 'turret',
                   x: 1190,
-                  y: 120,
+                  y: 160,
                   options: { speed: 80, phase: 0.9, fireCooldown: 0.7 },
                 },
                 {
                   type: 'turret',
-                  x: 1190,
-                  y: 430,
+                  x: 1260,
+                  y: 300,
                   options: { speed: 80, phase: 3.1, fireCooldown: 1 },
                 },
                 {
                   type: 'zigzag',
-                  x: 1330,
-                  y: 280,
+                  x: 1400,
+                  y: 450,
                   options: { speed: 185, phase: 0.8 },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          time: 18,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'drone',
+                  x: 1160,
+                  y: 160,
+                  options: { speed: 250, phase: 0.6 },
+                },
+                {
+                  type: 'drone',
+                  x: 1310,
+                  y: 300,
+                  options: { speed: 250, phase: 4.2 },
+                },
+                {
+                  type: 'drone',
+                  x: 1450,
+                  y: 450,
+                  options: { speed: 250, phase: 2.4 },
                 },
               ],
             },
@@ -1256,14 +1907,48 @@ window.VoidLancerArcadeStageData = {
                 {
                   type: 'drone',
                   x: 1140,
-                  y: 230,
+                  y: 160,
                   options: { speed: 250, phase: 0.6 },
                 },
                 {
                   type: 'drone',
-                  x: 1290,
-                  y: 390,
+                  x: 1300,
+                  y: 300,
                   options: { speed: 250, phase: 4.2 },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          time: 22.2,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'scout',
+                  x: 1150,
+                  y: 450,
+                  options: { speed: 190 },
+                },
+                {
+                  type: 'scout',
+                  x: 1270,
+                  y: 160,
+                  options: { speed: 190 },
+                },
+                {
+                  type: 'scout',
+                  x: 1390,
+                  y: 300,
+                  options: { speed: 190 },
+                },
+                {
+                  type: 'zigzag',
+                  x: 1330,
+                  y: 450,
+                  options: { speed: 190, phase: 1.6 },
                 },
               ],
             },
@@ -1284,20 +1969,48 @@ window.VoidLancerArcadeStageData = {
                 {
                   type: 'turret',
                   x: 1380,
-                  y: 180,
+                  y: 160,
                   options: { speed: 90, phase: 2, fireCooldown: 0.9 },
                 },
                 {
                   type: 'scout',
                   x: 1160,
-                  y: 340,
+                  y: 300,
                   options: { speed: 190 },
                 },
                 {
                   type: 'zigzag',
-                  x: 1260,
-                  y: 470,
+                  x: 1270,
+                  y: 450,
                   options: { speed: 180, phase: 5 },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          time: 26.4,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'drone',
+                  x: 1160,
+                  y: 160,
+                  options: { speed: 250, phase: 1.4 },
+                },
+                {
+                  type: 'drone',
+                  x: 1310,
+                  y: 300,
+                  options: { speed: 250, phase: 3.8 },
+                },
+                {
+                  type: 'drone',
+                  x: 1450,
+                  y: 450,
+                  options: { speed: 250, phase: 5.6 },
                 },
               ],
             },
@@ -1312,20 +2025,54 @@ window.VoidLancerArcadeStageData = {
                 {
                   type: 'drone',
                   x: 1150,
-                  y: 130,
+                  y: 160,
                   options: { speed: 255, phase: 1.8 },
                 },
                 {
                   type: 'drone',
                   x: 1300,
-                  y: 320,
+                  y: 300,
                   options: { speed: 255, phase: 3.9 },
                 },
                 {
                   type: 'drone',
-                  x: 1420,
+                  x: 1440,
                   y: 450,
                   options: { speed: 255, phase: 0.4 },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          time: 30.2,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'scout',
+                  x: 1170,
+                  y: 160,
+                  options: { speed: 195 },
+                },
+                {
+                  type: 'scout',
+                  x: 1290,
+                  y: 300,
+                  options: { speed: 195 },
+                },
+                {
+                  type: 'scout',
+                  x: 1410,
+                  y: 450,
+                  options: { speed: 195 },
+                },
+                {
+                  type: 'zigzag',
+                  x: 1350,
+                  y: 160,
+                  options: { speed: 195, phase: 0.5 },
                 },
               ],
             },
@@ -1346,26 +2093,54 @@ window.VoidLancerArcadeStageData = {
                 {
                   type: 'turret',
                   x: 1140,
-                  y: 260,
+                  y: 300,
                   options: { speed: 95, phase: 1.5, fireCooldown: 0.8 },
                 },
                 {
                   type: 'drone',
                   x: 1280,
-                  y: 160,
+                  y: 450,
                   options: { speed: 250, phase: 1.1 },
                 },
                 {
                   type: 'drone',
-                  x: 1280,
-                  y: 400,
+                  x: 1400,
+                  y: 160,
                   options: { speed: 250, phase: 3.7 },
                 },
                 {
                   type: 'zigzag',
                   x: 1360,
-                  y: 330,
+                  y: 300,
                   options: { speed: 190, phase: 2.2 },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          time: 33.4,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'drone',
+                  x: 1200,
+                  y: 450,
+                  options: { speed: 250, phase: 0.8 },
+                },
+                {
+                  type: 'drone',
+                  x: 1320,
+                  y: 160,
+                  options: { speed: 255, phase: 3.2 },
+                },
+                {
+                  type: 'scout',
+                  x: 1140,
+                  y: 300,
+                  options: { speed: 200 },
                 },
               ],
             },
@@ -1395,26 +2170,54 @@ window.VoidLancerArcadeStageData = {
                 {
                   type: 'zigzag',
                   x: 1140,
-                  y: 115,
+                  y: 160,
                   options: { speed: 165, phase: 0 },
                 },
                 {
                   type: 'zigzag',
                   x: 1230,
-                  y: 245,
+                  y: 300,
                   options: { speed: 165, phase: 1.6 },
                 },
                 {
                   type: 'zigzag',
                   x: 1320,
-                  y: 375,
+                  y: 450,
                   options: { speed: 165, phase: 3.1 },
                 },
                 {
                   type: 'zigzag',
                   x: 1410,
-                  y: 485,
+                  y: 160,
                   options: { speed: 165, phase: 4.7 },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          time: 3.6,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'zigzag',
+                  x: 1180,
+                  y: 300,
+                  options: { speed: 175, phase: 0.8 },
+                },
+                {
+                  type: 'zigzag',
+                  x: 1290,
+                  y: 450,
+                  options: { speed: 175, phase: 2.4 },
+                },
+                {
+                  type: 'zigzag',
+                  x: 1400,
+                  y: 160,
+                  options: { speed: 175, phase: 4.1 },
                 },
               ],
             },
@@ -1429,20 +2232,48 @@ window.VoidLancerArcadeStageData = {
                 {
                   type: 'zigzag',
                   x: 1360,
-                  y: 115,
+                  y: 300,
                   options: { speed: 200, phase: 2.4 },
                 },
                 {
                   type: 'zigzag',
                   x: 1150,
-                  y: 245,
+                  y: 450,
                   options: { speed: 200, phase: 4 },
                 },
                 {
                   type: 'zigzag',
                   x: 1270,
-                  y: 375,
+                  y: 160,
                   options: { speed: 200, phase: 0.8 },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          time: 8.8,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'zigzag',
+                  x: 1170,
+                  y: 300,
+                  options: { speed: 185, phase: 1.1 },
+                },
+                {
+                  type: 'zigzag',
+                  x: 1310,
+                  y: 450,
+                  options: { speed: 185, phase: 2.9 },
+                },
+                {
+                  type: 'zigzag',
+                  x: 1440,
+                  y: 160,
+                  options: { speed: 185, phase: 4.6 },
                 },
               ],
             },
@@ -1463,20 +2294,48 @@ window.VoidLancerArcadeStageData = {
                 {
                   type: 'zigzag',
                   x: 1400,
-                  y: 245,
+                  y: 300,
                   options: { speed: 185, phase: 1.2 },
                 },
                 {
                   type: 'zigzag',
                   x: 1180,
-                  y: 375,
+                  y: 450,
                   options: { speed: 185, phase: 3.6 },
                 },
                 {
                   type: 'zigzag',
                   x: 1300,
-                  y: 485,
+                  y: 160,
                   options: { speed: 185, phase: 5.6 },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          time: 13.2,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'zigzag',
+                  x: 1160,
+                  y: 300,
+                  options: { speed: 195, phase: 0.3 },
+                },
+                {
+                  type: 'zigzag',
+                  x: 1280,
+                  y: 450,
+                  options: { speed: 195, phase: 2.2 },
+                },
+                {
+                  type: 'zigzag',
+                  x: 1400,
+                  y: 160,
+                  options: { speed: 195, phase: 3.8 },
                 },
               ],
             },
@@ -1491,26 +2350,48 @@ window.VoidLancerArcadeStageData = {
                 {
                   type: 'zigzag',
                   x: 1420,
-                  y: 115,
+                  y: 300,
                   options: { speed: 215, phase: 3.9 },
                 },
                 {
                   type: 'zigzag',
                   x: 1160,
-                  y: 245,
+                  y: 450,
                   options: { speed: 215, phase: 0.7 },
                 },
                 {
                   type: 'zigzag',
                   x: 1300,
-                  y: 375,
+                  y: 160,
                   options: { speed: 215, phase: 2.9 },
                 },
                 {
                   type: 'zigzag',
                   x: 1240,
-                  y: 485,
+                  y: 300,
                   options: { speed: 215, phase: 5.1 },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          time: 17.2,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'zigzag',
+                  x: 1200,
+                  y: 450,
+                  options: { speed: 205, phase: 1.4 },
+                },
+                {
+                  type: 'zigzag',
+                  x: 1350,
+                  y: 160,
+                  options: { speed: 205, phase: 3.2 },
                 },
               ],
             },
@@ -1531,20 +2412,48 @@ window.VoidLancerArcadeStageData = {
                 {
                   type: 'scout',
                   x: 1200,
-                  y: 180,
+                  y: 300,
                   options: { speed: 190 },
                 },
                 {
                   type: 'scout',
                   x: 1340,
-                  y: 430,
+                  y: 450,
                   options: { speed: 190 },
                 },
                 {
                   type: 'turret',
                   x: 1420,
-                  y: 300,
+                  y: 160,
                   options: { speed: 92, phase: 1.4, fireCooldown: 1 },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          time: 21.5,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'zigzag',
+                  x: 1170,
+                  y: 300,
+                  options: { speed: 210, phase: 0.6 },
+                },
+                {
+                  type: 'zigzag',
+                  x: 1310,
+                  y: 450,
+                  options: { speed: 210, phase: 2.7 },
+                },
+                {
+                  type: 'zigzag',
+                  x: 1440,
+                  y: 160,
+                  options: { speed: 210, phase: 4.4 },
                 },
               ],
             },
@@ -1565,26 +2474,60 @@ window.VoidLancerArcadeStageData = {
                 {
                   type: 'zigzag',
                   x: 1150,
-                  y: 115,
+                  y: 300,
                   options: { speed: 175, phase: 1.5 },
                 },
                 {
                   type: 'zigzag',
                   x: 1280,
-                  y: 245,
+                  y: 450,
                   options: { speed: 175, phase: 3.3 },
                 },
                 {
                   type: 'zigzag',
                   x: 1400,
-                  y: 375,
+                  y: 160,
                   options: { speed: 175, phase: 5.4 },
                 },
                 {
                   type: 'zigzag',
                   x: 1220,
-                  y: 485,
+                  y: 300,
                   options: { speed: 175, phase: 0.9 },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          time: 26.8,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'zigzag',
+                  x: 1160,
+                  y: 450,
+                  options: { speed: 200, phase: 1.9 },
+                },
+                {
+                  type: 'zigzag',
+                  x: 1300,
+                  y: 160,
+                  options: { speed: 200, phase: 3.7 },
+                },
+                {
+                  type: 'zigzag',
+                  x: 1430,
+                  y: 300,
+                  options: { speed: 200, phase: 5.5 },
+                },
+                {
+                  type: 'scout',
+                  x: 1240,
+                  y: 450,
+                  options: { speed: 195 },
                 },
               ],
             },
@@ -1599,20 +2542,54 @@ window.VoidLancerArcadeStageData = {
                 {
                   type: 'zigzag',
                   x: 1360,
-                  y: 245,
+                  y: 160,
                   options: { speed: 205, phase: 2.1 },
                 },
                 {
                   type: 'zigzag',
                   x: 1180,
-                  y: 375,
+                  y: 300,
                   options: { speed: 205, phase: 4.5 },
                 },
                 {
                   type: 'scout',
                   x: 1300,
-                  y: 115,
+                  y: 450,
                   options: { speed: 195 },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          time: 31.2,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'zigzag',
+                  x: 1170,
+                  y: 160,
+                  options: { speed: 215, phase: 0.4 },
+                },
+                {
+                  type: 'zigzag',
+                  x: 1320,
+                  y: 300,
+                  options: { speed: 215, phase: 2.5 },
+                },
+                {
+                  type: 'zigzag',
+                  x: 1450,
+                  y: 450,
+                  options: { speed: 215, phase: 4.3 },
+                },
+                {
+                  type: 'turret',
+                  x: 1260,
+                  y: 160,
+                  options: { speed: 95, phase: 2.2, fireCooldown: 0.9 },
                 },
               ],
             },
@@ -1633,20 +2610,42 @@ window.VoidLancerArcadeStageData = {
                 {
                   type: 'zigzag',
                   x: 1150,
-                  y: 115,
+                  y: 300,
                   options: { speed: 170, phase: 0.3 },
                 },
                 {
                   type: 'zigzag',
                   x: 1320,
-                  y: 375,
+                  y: 450,
                   options: { speed: 200, phase: 2.7 },
                 },
                 {
                   type: 'zigzag',
                   x: 1240,
-                  y: 485,
+                  y: 160,
                   options: { speed: 170, phase: 4.9 },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          time: 35.5,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'zigzag',
+                  x: 1120,
+                  y: 300,
+                  options: { speed: 210, phase: 1.2 },
+                },
+                {
+                  type: 'zigzag',
+                  x: 1180,
+                  y: 450,
+                  options: { speed: 210, phase: 3.4 },
                 },
               ],
             },
@@ -1682,20 +2681,48 @@ window.VoidLancerArcadeStageData = {
                 {
                   type: 'scout',
                   x: 1230,
-                  y: 270,
+                  y: 295,
                   options: { speed: 185 },
                 },
                 {
                   type: 'scout',
                   x: 1310,
-                  y: 390,
+                  y: 445,
                   options: { speed: 185 },
                 },
                 {
                   type: 'zigzag',
                   x: 1400,
-                  y: 470,
+                  y: 150,
                   options: { speed: 175, phase: 2 },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          time: 3.4,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'drone',
+                  x: 1140,
+                  y: 295,
+                  options: { speed: 235, phase: 1.1 },
+                },
+                {
+                  type: 'drone',
+                  x: 1290,
+                  y: 445,
+                  options: { speed: 255, phase: 3.6 },
+                },
+                {
+                  type: 'drone',
+                  x: 1430,
+                  y: 150,
+                  options: { speed: 250, phase: 5.2 },
                 },
               ],
             },
@@ -1710,14 +2737,42 @@ window.VoidLancerArcadeStageData = {
                 {
                   type: 'drone',
                   x: 1160,
-                  y: 200,
+                  y: 295,
                   options: { speed: 235, phase: 1.1 },
                 },
                 {
                   type: 'drone',
                   x: 1300,
-                  y: 340,
+                  y: 445,
                   options: { speed: 255, phase: 3.6 },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          time: 7.5,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'scout',
+                  x: 1130,
+                  y: 150,
+                  options: { speed: 190 },
+                },
+                {
+                  type: 'scout',
+                  x: 1250,
+                  y: 295,
+                  options: { speed: 190 },
+                },
+                {
+                  type: 'zigzag',
+                  x: 1380,
+                  y: 445,
+                  options: { speed: 180, phase: 0.7 },
                 },
               ],
             },
@@ -1738,20 +2793,48 @@ window.VoidLancerArcadeStageData = {
                 {
                   type: 'turret',
                   x: 1250,
-                  y: 130,
+                  y: 150,
                   options: { speed: 80, phase: 0.5, fireCooldown: 0.8 },
                 },
                 {
                   type: 'turret',
                   x: 1330,
-                  y: 420,
+                  y: 295,
                   options: { speed: 80, phase: 2.7, fireCooldown: 1 },
                 },
                 {
                   type: 'zigzag',
                   x: 1420,
-                  y: 280,
+                  y: 445,
                   options: { speed: 185, phase: 1.1 },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          time: 11.7,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'drone',
+                  x: 1150,
+                  y: 150,
+                  options: { speed: 245, phase: 0.4 },
+                },
+                {
+                  type: 'drone',
+                  x: 1300,
+                  y: 295,
+                  options: { speed: 250, phase: 2.6 },
+                },
+                {
+                  type: 'drone',
+                  x: 1440,
+                  y: 445,
+                  options: { speed: 255, phase: 4.5 },
                 },
               ],
             },
@@ -1766,20 +2849,54 @@ window.VoidLancerArcadeStageData = {
                 {
                   type: 'drone',
                   x: 1140,
-                  y: 110,
+                  y: 150,
                   options: { speed: 240, phase: 0.3 },
                 },
                 {
                   type: 'drone',
                   x: 1280,
-                  y: 300,
+                  y: 295,
                   options: { speed: 240, phase: 2.9 },
                 },
                 {
                   type: 'drone',
                   x: 1420,
-                  y: 460,
+                  y: 445,
                   options: { speed: 240, phase: 5 },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          time: 16.4,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'scout',
+                  x: 1160,
+                  y: 150,
+                  options: { speed: 195 },
+                },
+                {
+                  type: 'scout',
+                  x: 1280,
+                  y: 295,
+                  options: { speed: 195 },
+                },
+                {
+                  type: 'scout',
+                  x: 1400,
+                  y: 445,
+                  options: { speed: 195 },
+                },
+                {
+                  type: 'zigzag',
+                  x: 1330,
+                  y: 150,
+                  options: { speed: 190, phase: 2.4 },
                 },
               ],
             },
@@ -1800,14 +2917,42 @@ window.VoidLancerArcadeStageData = {
                 {
                   type: 'scout',
                   x: 1200,
-                  y: 160,
+                  y: 295,
                   options: { speed: 130 },
                 },
                 {
                   type: 'scout',
                   x: 1200,
-                  y: 400,
+                  y: 445,
                   options: { speed: 130 },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          time: 21.3,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'drone',
+                  x: 1170,
+                  y: 150,
+                  options: { speed: 245, phase: 1.5 },
+                },
+                {
+                  type: 'drone',
+                  x: 1320,
+                  y: 295,
+                  options: { speed: 250, phase: 3.8 },
+                },
+                {
+                  type: 'zigzag',
+                  x: 1450,
+                  y: 445,
+                  options: { speed: 185, phase: 0.2 },
                 },
               ],
             },
@@ -1828,26 +2973,54 @@ window.VoidLancerArcadeStageData = {
                 {
                   type: 'turret',
                   x: 1180,
-                  y: 260,
+                  y: 150,
                   options: { speed: 85, phase: 1.9, fireCooldown: 0.9 },
                 },
                 {
                   type: 'zigzag',
                   x: 1300,
-                  y: 120,
+                  y: 295,
                   options: { speed: 180, phase: 0.5 },
                 },
                 {
                   type: 'zigzag',
                   x: 1300,
-                  y: 420,
+                  y: 445,
                   options: { speed: 180, phase: 3.7 },
                 },
                 {
                   type: 'scout',
                   x: 1400,
-                  y: 300,
+                  y: 150,
                   options: { speed: 195 },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          time: 25.6,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'drone',
+                  x: 1150,
+                  y: 295,
+                  options: { speed: 250, phase: 0.7 },
+                },
+                {
+                  type: 'drone',
+                  x: 1300,
+                  y: 445,
+                  options: { speed: 255, phase: 2.4 },
+                },
+                {
+                  type: 'drone',
+                  x: 1440,
+                  y: 150,
+                  options: { speed: 255, phase: 4.8 },
                 },
               ],
             },
@@ -1862,20 +3035,54 @@ window.VoidLancerArcadeStageData = {
                 {
                   type: 'drone',
                   x: 1150,
-                  y: 180,
+                  y: 295,
                   options: { speed: 250, phase: 0.8 },
                 },
                 {
                   type: 'drone',
                   x: 1290,
-                  y: 360,
+                  y: 445,
                   options: { speed: 250, phase: 3.2 },
                 },
                 {
                   type: 'drone',
                   x: 1430,
-                  y: 110,
+                  y: 150,
                   options: { speed: 250, phase: 5.4 },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          time: 29.6,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'scout',
+                  x: 1140,
+                  y: 295,
+                  options: { speed: 200 },
+                },
+                {
+                  type: 'scout',
+                  x: 1270,
+                  y: 445,
+                  options: { speed: 200 },
+                },
+                {
+                  type: 'scout',
+                  x: 1400,
+                  y: 150,
+                  options: { speed: 200 },
+                },
+                {
+                  type: 'zigzag',
+                  x: 1350,
+                  y: 295,
+                  options: { speed: 190, phase: 1.3 },
                 },
               ],
             },
@@ -1890,26 +3097,54 @@ window.VoidLancerArcadeStageData = {
                 {
                   type: 'zigzag',
                   x: 1170,
-                  y: 115,
+                  y: 445,
                   options: { speed: 180, phase: 1 },
                 },
                 {
                   type: 'zigzag',
                   x: 1290,
-                  y: 245,
+                  y: 150,
                   options: { speed: 180, phase: 2.6 },
                 },
                 {
                   type: 'zigzag',
                   x: 1410,
-                  y: 375,
+                  y: 295,
                   options: { speed: 180, phase: 4.2 },
                 },
                 {
                   type: 'scout',
                   x: 1230,
-                  y: 485,
+                  y: 445,
                   options: { speed: 200 },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          time: 33.4,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'drone',
+                  x: 1160,
+                  y: 150,
+                  options: { speed: 255, phase: 1.9 },
+                },
+                {
+                  type: 'drone',
+                  x: 1310,
+                  y: 295,
+                  options: { speed: 255, phase: 3.5 },
+                },
+                {
+                  type: 'drone',
+                  x: 1450,
+                  y: 445,
+                  options: { speed: 255, phase: 5.1 },
                 },
               ],
             },
@@ -1924,20 +3159,48 @@ window.VoidLancerArcadeStageData = {
                 {
                   type: 'turret',
                   x: 1250,
-                  y: 430,
+                  y: 150,
                   options: { speed: 90, phase: 0.6, fireCooldown: 0.8 },
                 },
                 {
                   type: 'drone',
                   x: 1140,
-                  y: 150,
+                  y: 295,
                   options: { speed: 245, phase: 1.6 },
                 },
                 {
                   type: 'drone',
                   x: 1330,
-                  y: 300,
+                  y: 445,
                   options: { speed: 245, phase: 4 },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          time: 35.9,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'scout',
+                  x: 1120,
+                  y: 150,
+                  options: { speed: 200 },
+                },
+                {
+                  type: 'scout',
+                  x: 1250,
+                  y: 295,
+                  options: { speed: 200 },
+                },
+                {
+                  type: 'zigzag',
+                  x: 1390,
+                  y: 445,
+                  options: { speed: 190, phase: 2.8 },
                 },
               ],
             },
@@ -1958,20 +3221,48 @@ window.VoidLancerArcadeStageData = {
                 {
                   type: 'drone',
                   x: 1180,
-                  y: 210,
+                  y: 150,
                   options: { speed: 245, phase: 0.9 },
                 },
                 {
                   type: 'zigzag',
                   x: 1280,
-                  y: 330,
+                  y: 295,
                   options: { speed: 185, phase: 2.4 },
                 },
                 {
                   type: 'scout',
                   x: 1360,
-                  y: 440,
+                  y: 445,
                   options: { speed: 200 },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          time: 38.6,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                {
+                  type: 'drone',
+                  x: 1100,
+                  y: 150,
+                  options: { speed: 255, phase: 0.5 },
+                },
+                {
+                  type: 'scout',
+                  x: 1150,
+                  y: 295,
+                  options: { speed: 195 },
+                },
+                {
+                  type: 'zigzag',
+                  x: 1160,
+                  y: 445,
+                  options: { speed: 190, phase: 3.9 },
                 },
               ],
             },

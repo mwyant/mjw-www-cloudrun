@@ -754,12 +754,47 @@ test('the Graveyard keeps its tested wave pacing and bounds the exit beat', () =
     data.waveTimeline.filter((wave) => (wave.actions || []).some((action) => action.type === 'spawnEnemies')),
     (wave) => wave.time,
   );
-  assert.deepEqual(spawnTimes, [0, 3, 8.5, 12, 16, 21, 25.5],
-    'the early waves are untouched and 25.5s is still the last wave of the lane');
+  assert.deepEqual(spawnTimes, [0, 1.5, 3, 5, 6.8, 8.5, 10.2, 12, 13.8, 16, 18, 19.8, 21, 23.2, 25.5],
+    'the seven original beats still spawn in order, with a ramped wave between each of them');
 
   assert.equal(data.missionDuration, 30, 'the crossing stays a 30 second run');
   const gap = data.missionDuration - spawnTimes[spawnTimes.length - 1];
   assert.ok(gap >= 4, `the exit beat has ${gap}s to land once the last wave is in`);
+});
+
+// The difficulty ramp lives entirely in the wave data: more hulls, a tighter
+// cadence and waves that overlap, with hit points, banners and the tagged
+// patrol left alone. Count and timing assertions only - these are data
+// checks, not playtest results.
+test('the Graveyard ramp doubles the hulls on a cadence that never leaves a 2.5s hole', () => {
+  const data = level2Lane().scene.levelStageData;
+  const hulls = [];
+  const spawnTimes = [];
+  for (const wave of data.waveTimeline) {
+    if (!(wave.actions || []).some((action) => action.type === 'spawnEnemies')) continue;
+    spawnTimes.push(wave.time);
+    for (const action of wave.actions) {
+      if (action.type === 'spawnEnemies') {
+        for (const enemy of action.enemies) hulls.push({ time: wave.time, enemy });
+      }
+    }
+  }
+
+  assert.equal(hulls.length, 41, 'the lane ships 41 hulls against the original 17');
+  assert.equal(hulls.filter(({ enemy }) => enemy.options && 'hp' in enemy.options).length, 0,
+    'the ramp adds hulls, never hit points');
+
+  const tagged = hulls.find(({ enemy }) => enemy.options && enemy.options.patrolTag === 'graveyard');
+  assert.ok(tagged, 'exactly one alarm-linked patrol turret is still spawned from the timeline');
+  assert.equal(hulls.filter(({ enemy }) => enemy.options && enemy.options.patrolTag).length, 1,
+    'and no second turret carries the tag');
+  assert.equal(tagged.time, 0, 'the tagged patrol is still on station from the first second');
+
+  let widest = 0;
+  for (let i = 1; i < spawnTimes.length; i += 1) {
+    widest = Math.max(widest, spawnTimes[i] - spawnTimes[i - 1]);
+  }
+  assert.ok(widest <= 2.5, `no gap between waves runs longer than ${widest}s (it was 5.5s)`);
 });
 
 test('each Graveyard banner is readable on the plate and lands alone', () => {

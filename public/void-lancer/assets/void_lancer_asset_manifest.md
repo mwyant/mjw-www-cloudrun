@@ -27,6 +27,8 @@ Source of truth for this pass: user-provided prototype summary. The `web-farm-po
 | Zigzag enemy | `enemy_zigzag_idle.png` | `56x36` | PNG | Single | Distinct swept body for movement readability |
 | Turret enemy | `enemy_turret_idle.png` | `56x40` | PNG | Single | Heavier frontal threat, obvious cannon read |
 | Drone enemy | `enemy_drone_idle.png` | `40x40` | PNG | Single | Small orbiting or harassment unit |
+| Armored interceptor | `enemy_interceptor_armor_1.webp` | `72x50` | WebP | Single | Two primary hits; introduced in the post-Graveyard arcade lanes |
+| Rotary emplacement | `enemy_rotary_emplacement_1.webp` | `80x48` | WebP | Single | Three primary hits; sprite rotates with its 360-degree firing sweep |
 | Boss siege carrier | `boss_siege_carrier_base.png` | `320x160` | PNG | Single | Ceremonial-industrial capital silhouette |
 | Boss detail overlay or weakpoints | `boss_siege_carrier_glow_overlay.png` | `320x160` | PNG | Single | Optional additive layer for damage states |
 | Weapon power-up | `pickup_pulse_plus_strip.png` | `24x24` x 6 frames | PNG | Strip | Jade-cyan core with slow spin/glow |
@@ -52,6 +54,8 @@ Source of truth for this pass: user-provided prototype summary. The `web-farm-po
 - Zigzag draw routine -> `enemy_zigzag_idle.png`
 - Turret draw routine -> `enemy_turret_idle.png`
 - Drone draw routine -> `enemy_drone_idle.png`
+- Armored interceptor draw routine -> `enemy_interceptor_armor_1.webp`
+- Rotary gun draw routine -> `enemy_rotary_emplacement_1.webp`
 - Siege-carrier boss placeholder -> `boss_siege_carrier_base.png`
 - Weapon pickup placeholder -> `pickup_pulse_plus_strip.png`
 - Hit particles -> `fx_hit_spark_strip.png`

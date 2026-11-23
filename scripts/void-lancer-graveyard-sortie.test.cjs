@@ -82,6 +82,9 @@ function makeNode(kind, args) {
     setText(value) { node.text = value; return node; },
     setColor(value) { node.color = value; return node; },
     fillStyle() { return node; },
+    lineStyle() { return node; },
+    fillRect() { return node; },
+    strokeRect() { return node; },
     clear() { node.fills = []; return node; },
     fillPoints(points) {
       node.points = points;
@@ -358,11 +361,17 @@ test('the HUD stage counter follows the active sortie across the twelve-stage ch
   r.scene.syncHud();
   assert.equal(stageText.value, '01 / 12');
   assert.equal(stageTag.value, 'OPENING LANE');
+  assert.equal(r.scene.weaponTag.value, 'MK I');
 
   r.scene.sortieIndex = 2;
   r.scene.syncHud();
   assert.equal(stageText.value, '02 / 12');
   assert.equal(stageTag.value, 'GRAVEYARD LANE');
+
+  r.scene.state.player.weaponLevel = 3;
+  r.scene.syncHud();
+  assert.equal(r.scene.weaponText.value, 'LANCE');
+  assert.equal(r.scene.weaponTag.value, 'MK III');
 
   // Routing identity 3 is still the Solar Altar; only its display slot moved.
   r.scene.sortieIndex = 3;
@@ -439,6 +448,34 @@ test('the alarm latches once, so re-entering the beam never rings a second siren
   assert.equal(again.contactStart, true, 'the light can still catch the Lancer');
   assert.equal(again.alarm, false, 'but the alarm stays latched');
   assert.equal(alarms, 1);
+});
+
+test('a second sustained lock after breaking contact calls reinforcements exactly once', () => {
+  const det = G.createDetection();
+  det.originX = 600;
+  det.originY = 300;
+  const target = { x: 380, y: 300 };
+  let firstAlarm = 0;
+  for (let i = 0; i < 20; i += 1) {
+    if (G.updateDetection(det, 0.1, target).alarm) firstAlarm += 1;
+  }
+  assert.equal(firstAlarm, 1);
+  assert.equal(det.alarm, true);
+  assert.equal(det.reinforcementsCalled, false);
+
+  const broken = G.updateDetection(det, 0.1, { x: 600, y: 120 });
+  assert.equal(broken.contactEnd, true);
+  assert.equal(det.alarmBroken, true, 'the first warning remains latched when contact is broken');
+
+  det.sweepPhase = 0;
+  assert.equal(G.updateDetection(det, 0.1, target).contactStart, true);
+  let summoned = 0;
+  for (let i = 0; i < 16; i += 1) {
+    if (G.updateDetection(det, 0.1, target).reinforcements) summoned += 1;
+  }
+  assert.equal(summoned, 1, 'the second held lock escalates once');
+  assert.equal(det.reinforcementsCalled, true);
+  assert.equal(G.updateDetection(det, 0.1, target).reinforcements, false);
 });
 
 test('the drawn cone and the contact test are the same shape', () => {
@@ -537,7 +574,7 @@ test('the Graveyard scene draws the cone the detection state describes', () => {
   assert.equal(G.inBeam(detection, outside.x, outside.y), false);
 });
 
-test('holding the worklight rings one siren, raises the banner and spawns nothing', () => {
+test('the first worklight alarm warns and wakes the patrol without spawning reinforcements', () => {
   const r = graveyardScene();
   const yard = r.scene.state.graveyard;
   r.scene.state.player.x = yard.detection.originX - 300;
@@ -557,6 +594,26 @@ test('holding the worklight rings one siren, raises the banner and spawns nothin
   assert.equal(yard.alertText.text, 'ALARM // IMPERIAL PATROL ALERTED');
   assert.equal(yard.alertText.visible, true);
   assert.equal(yard.alertChevron.visible, true, 'the alert carries a shape, not just a colour');
+  assert.equal(yard.reinforcementsCalled, false);
+});
+
+test('the second worklight lock telegraphs a 40-craft, three-hit squad through a marked center gap', () => {
+  const r = graveyardScene();
+  const yard = r.scene.state.graveyard;
+  yard.detection.alarm = true;
+
+  r.scene.triggerGraveyardReinforcements();
+  r.scene.updateGraveyardAlert(yard.detection, yard);
+
+  assert.equal(r.spawned.length, 40);
+  assert.ok(r.spawned.every(([type, , , options]) => type === 'interceptor' && options.hp === 24));
+  const rowCenters = Array.from(new Set(r.spawned.map(([, , y]) => y))).sort((a, b) => a - b);
+  assert.deepEqual(rowCenters, [66, 112, 158, 204, 350, 396, 442, 488]);
+  assert.equal(yard.reinforcementsCalled, true);
+  assert.equal(yard.escapeCue.visible, true);
+  assert.equal(yard.escapeLabel.visible, true);
+  assert.match(yard.escapeLabel.text, /CENTER LANE/);
+  assert.match(r.scene.state.announcements[0].text, /CENTER GAP/);
 });
 
 test('the salvager uses a distinct workboat sprite and never shoots', () => {
@@ -631,6 +688,65 @@ test('the tagged patrol holds fire on station and fires faster once alarmed', ()
     gap += 1;
   }
   assert.ok(gap > 0 && gap <= 10, `accelerated interval (took ${gap} frames, ordinary is 14)`);
+});
+
+test('armored units use compatible 2-hit and 3-hit health while stock HP stays unchanged', () => {
+  const r = runtime();
+  const scene = r.scene;
+  const spawnLiveEnemy = Object.getPrototypeOf(scene).spawnEnemy.bind(scene);
+  const interceptor = spawnLiveEnemy('interceptor', 200, 100, { speed: 0 });
+  const rotary = spawnLiveEnemy('rotary', 300, 100, { speed: 0 });
+  const scout = spawnLiveEnemy('scout', 400, 100, { speed: 0 });
+  const turret = spawnLiveEnemy('turret', 500, 100, { speed: 0 });
+
+  assert.equal(interceptor.hp, 16, 'two ordinary 8-damage shots remove the interceptor');
+  assert.equal(rotary.hp, 24, 'three ordinary 8-damage shots remove the rotary gun');
+  assert.equal(scout.hp, 1, 'stock scouts keep their authored HP');
+  assert.equal(turret.hp, 3, 'stock turrets keep their authored HP');
+  assert.equal(interceptor.sprite.displayWidth, 72);
+  assert.equal(rotary.sprite.displayWidth, 80);
+
+  scene.state = emptyState({
+    mode: 'playing',
+    enemies: [interceptor],
+    bullets: [{ owner: 'player', x: interceptor.x, y: interceptor.y, vx: 0, vy: 0, radius: 4, damage: 16, sprite: null }],
+  });
+  scene.spawnHitSpark = () => {};
+  scene.spawnExplosionFx = () => {};
+  scene.syncHud = () => {};
+  scene.updateBullets(0);
+  assert.equal(interceptor.hp, 0, 'one MK III-strength shot removes the 2-hit fighter');
+});
+
+test('MK III fires a slower single heavy shot, and the rotary gun sweeps its shot around 360 degrees', () => {
+  const r = runtime();
+  const scene = r.scene;
+  scene.state = emptyState({ mode: 'playing' });
+  scene.state.player.weaponLevel = 3;
+  scene.actionState.isHeld = (action) => action === 'fire';
+  const playerShots = [];
+  scene.spawnBullet = (...args) => playerShots.push(args);
+  scene.primePlayerRecoil = () => {};
+  scene.playSound = () => {};
+  scene.updatePlayer(0.016);
+
+  assert.equal(playerShots.length, 1, 'MK III replaces the spread with one projectile');
+  assert.equal(playerShots[0][6], 16);
+  assert.equal(playerShots[0][3], 460);
+  assert.equal(playerShots[0][7], 'heavy');
+  assert.equal(scene.state.player.cooldown, 0.34);
+
+  const rotary = Object.getPrototypeOf(scene).spawnEnemy.call(
+    scene, 'rotary', 300, 200, { speed: 0, fireCooldown: 0, rotationSpeed: 2 },
+  );
+  scene.state.enemies = [rotary];
+  const radialShots = [];
+  scene.spawnBullet = (...args) => radialShots.push(args);
+  scene.updateEnemies(0.5);
+  assert.ok(Math.abs(rotary.sprite.rotation - 1) < 1e-9, 'the cannon sprite follows the rotating mount');
+  assert.equal(radialShots.length, 1);
+  assert.ok(radialShots[0][3] < 0 && radialShots[0][4] < 0, 'the first sweep shot follows the left-pointing sprite at its rotated angle');
+  assert.ok(Math.abs(Math.hypot(radialShots[0][3], radialShots[0][4]) - 250) < 1e-9);
 });
 
 // Drive update() without the scenery: only the worklight read and the mission
@@ -754,19 +870,18 @@ test('the Graveyard keeps its tested wave pacing and bounds the exit beat', () =
     data.waveTimeline.filter((wave) => (wave.actions || []).some((action) => action.type === 'spawnEnemies')),
     (wave) => wave.time,
   );
-  assert.deepEqual(spawnTimes, [0, 1.5, 3, 5, 6.8, 8.5, 10.2, 12, 13.8, 16, 18, 19.8, 21, 23.2, 25.5],
-    'the seven original beats still spawn in order, with a ramped wave between each of them');
+  assert.deepEqual(spawnTimes, [0, 1.5, 3, 4.2, 5, 6.8, 8.5, 10.2, 12, 13.8, 14.8, 16, 18, 19.8, 21, 22.2, 23.2, 25.5],
+    'three extra pressure beats tighten the Graveyard without moving its original anchors');
 
   assert.equal(data.missionDuration, 30, 'the crossing stays a 30 second run');
   const gap = data.missionDuration - spawnTimes[spawnTimes.length - 1];
   assert.ok(gap >= 4, `the exit beat has ${gap}s to land once the last wave is in`);
 });
 
-// The difficulty ramp lives entirely in the wave data: more hulls, a tighter
-// cadence and waves that overlap, with hit points, banners and the tagged
-// patrol left alone. Count and timing assertions only - these are data
-// checks, not playtest results.
-test('the Graveyard ramp doubles the hulls on a cadence that never leaves a 2.5s hole', () => {
+// The difficulty ramp lives entirely in the wave data: more stock hulls, a
+// tighter cadence and waves that overlap, with base hit points and the tagged
+// patrol left alone. Count and timing assertions only - not playtest results.
+test('the Graveyard ramp raises hull count and tightens waves without altering stock HP', () => {
   const data = level2Lane().scene.levelStageData;
   const hulls = [];
   const spawnTimes = [];
@@ -780,7 +895,7 @@ test('the Graveyard ramp doubles the hulls on a cadence that never leaves a 2.5s
     }
   }
 
-  assert.equal(hulls.length, 41, 'the lane ships 41 hulls against the original 17');
+  assert.equal(hulls.length, 50, 'the lane ships 50 stock hulls against the original 17');
   assert.equal(hulls.filter(({ enemy }) => enemy.options && 'hp' in enemy.options).length, 0,
     'the ramp adds hulls, never hit points');
 
@@ -789,6 +904,10 @@ test('the Graveyard ramp doubles the hulls on a cadence that never leaves a 2.5s
   assert.equal(hulls.filter(({ enemy }) => enemy.options && enemy.options.patrolTag).length, 1,
     'and no second turret carries the tag');
   assert.equal(tagged.time, 0, 'the tagged patrol is still on station from the first second');
+  assert.equal(hulls.some(({ enemy }) => enemy.type === 'interceptor' || enemy.type === 'rotary'), false,
+    'the armored roster stays in the post-Graveyard arcade block');
+  const timedDroneWave = hulls.filter(({ time, enemy }) => time === 16 && enemy.type === 'drone');
+  assert.equal(timedDroneWave.length, 4, 'the independent four-drone clock wave remains at 16 seconds');
 
   let widest = 0;
   for (let i = 1; i < spawnTimes.length; i += 1) {

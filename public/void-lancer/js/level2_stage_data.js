@@ -10,9 +10,9 @@
 // spaced so each one finishes before the next arrives (the queue ticks every
 // banner's ttl together, so overlapping entries would cut each other off).
 //
-// The waves carry the difficulty: the seven original beats stay exactly as
-// authored and eight more sit between them, so a spawn lands every 2.5s or
-// less instead of every 3-5.5s and two or three waves are alive at once.
+// The waves carry the difficulty: the original anchors stay exactly as
+// authored, eight earlier pressure beats tighten the baseline, and three more
+// standard packets now fill the mid-lane lulls. No existing unit gets tougher.
 // Every hull keeps its stock hit points - the ramp is count, cadence and
 // overlap, never durability.
 window.VoidLancerLevel2StageData = {
@@ -62,6 +62,21 @@ window.VoidLancerLevel2StageData = {
             { type: 'scout', x: 980, y: 150 },
             { type: 'scout', x: 1060, y: 268 },
             { type: 'scout', x: 1140, y: 386 },
+          ],
+        },
+      ],
+    },
+    {
+      // The outer file catches the opening file from both heights without
+      // changing the stock scout durability.
+      time: 4.2,
+      actions: [
+        {
+          type: 'spawnEnemies',
+          enemies: [
+            { type: 'scout', x: 1008, y: 110 },
+            { type: 'scout', x: 1092, y: 270 },
+            { type: 'scout', x: 1176, y: 430 },
           ],
         },
       ],
@@ -161,6 +176,20 @@ window.VoidLancerLevel2StageData = {
       ],
     },
     {
+      // Close the middle lull with another ordinary hull packet.
+      time: 14.8,
+      actions: [
+        {
+          type: 'spawnEnemies',
+          enemies: [
+            { type: 'scout', x: 1040, y: 136 },
+            { type: 'zigzag', x: 1128, y: 280, options: { phase: 1.1 } },
+            { type: 'scout', x: 1216, y: 414 },
+          ],
+        },
+      ],
+    },
+    {
       time: 16.0,
       actions: [
         {
@@ -214,6 +243,21 @@ window.VoidLancerLevel2StageData = {
             { type: 'scout', x: 1065, y: 254 },
             { type: 'scout', x: 1150, y: 378 },
             { type: 'zigzag', x: 1235, y: 452, options: { phase: 0.8 } },
+          ],
+        },
+      ],
+    },
+    {
+      // One more standard patrol packet keeps the lane crowded before its
+      // original final wave.
+      time: 22.2,
+      actions: [
+        {
+          type: 'spawnEnemies',
+          enemies: [
+            { type: 'scout', x: 1024, y: 126 },
+            { type: 'scout', x: 1112, y: 266 },
+            { type: 'scout', x: 1200, y: 406 },
           ],
         },
       ],

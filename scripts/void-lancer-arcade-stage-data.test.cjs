@@ -26,6 +26,10 @@ function sliceBetween(source, startMarker, endMarker) {
 }
 
 const mainSource = readFileSync(join(jsDir, 'main.js'), 'utf8');
+const runtimeManifest = JSON.parse(readFileSync(
+  join(__dirname, '../public/void-lancer/assets/data/runtime_asset_manifest.json'),
+  'utf8',
+));
 
 const GAME_WIDTH = Number(/const GAME_WIDTH = (\d+);/.exec(mainSource)[1]);
 const GAME_HEIGHT = Number(/const GAME_HEIGHT = (\d+);/.exec(mainSource)[1]);
@@ -245,6 +249,40 @@ test('every enemy enters the playfield whole, inside the vertical band', () => {
     });
   }
   assert.deepEqual(issues, []);
+});
+
+test('armored enemies roll out after an early MK III pickup with both sprites registered', () => {
+  const first = data.stages['escalation-01'];
+  const ordered = data.provisionalOrder.map((id) => data.stages[id]);
+  const pickup = first.waveTimeline.find((wave) => wave.actions.some((action) =>
+    action.type === 'spawnPickup' && action.weaponLevel === 3));
+  const firstFighter = first.waveTimeline.find((wave) => wave.actions.some((action) =>
+    action.type === 'spawnEnemies' && action.enemies.some((enemy) => enemy.type === 'interceptor')));
+  const count = (stage, type) => {
+    let total = 0;
+    eachSpawn(stage, (enemy) => { if (enemy.type === type) total += 1; });
+    return total;
+  };
+
+  assert.ok(pickup && firstFighter && pickup.time < firstFighter.time,
+    'MK III is offered before the first 2-hit fighter appears');
+  assert.equal(count(ordered[0], 'interceptor'), 2, 'the first armored lane introduces only two fighters late');
+  assert.equal(count(ordered[0], 'rotary'), 0, 'the 3-hit rotating gun waits for the next lane');
+  assert.ok(count(ordered[1], 'rotary') > 0, 'the second arcade lane adds the rotary gun');
+  assert.ok(ordered.slice(2).every((stage) => count(stage, 'interceptor') + count(stage, 'rotary') > 0),
+    'later lanes keep integrating the armor types instead of introducing one sudden wall');
+
+  for (const [type, asset, size] of [
+    ['interceptor', 'enemy_interceptor_armor_1.webp', [72, 50]],
+    ['rotary', 'enemy_rotary_emplacement_1.webp', [80, 48]],
+  ]) {
+    assert.deepEqual(runtimeManifest.enemies[type].displaySize, size);
+    assert.ok(runtimeManifest.enemies[type].collisionRadius > 0);
+    assert.ok(mainSource.includes(`this.load.image('enemy${type === 'interceptor' ? 'Interceptor' : 'Rotary'}', 'void_lancer_pack/${asset}')`),
+      `${type} texture is loaded by the scene`);
+    assert.ok(readFileSync(join(__dirname, `../public/void-lancer/assets/void_lancer_pack/${asset}`)).length > 0,
+      `${asset} is present in the game asset pack`);
+  }
 });
 
 test('reordering the provisional order leaves every stage id untouched', () => {

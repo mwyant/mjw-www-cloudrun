@@ -55,6 +55,9 @@ const VoidLancerGraveyard = (() => {
       contactSeconds: 0,
       graceExpired: false,
       alarm: false,
+      alarmBroken: false,
+      repeatContact: false,
+      reinforcementsCalled: false,
     };
   }
 
@@ -110,10 +113,10 @@ const VoidLancerGraveyard = (() => {
   }
 
   // One frame of the worklight read. Returns only events the scene reacts to:
-  // contactStart (beam locks), contactEnd (everything resets) and the single
-  // latched alarm. The alarm never spawns anything by itself.
+  // contactStart (beam locks), contactEnd, the first latched alarm, and the
+  // second sustained lock that calls in reinforcements. The scene owns spawns.
   function updateDetection(state, dt, target) {
-    const events = { contactStart: false, contactEnd: false, alarm: false };
+    const events = { contactStart: false, contactEnd: false, alarm: false, reinforcements: false };
     const step = Number.isFinite(dt) && dt > 0 ? dt : 0;
 
     state.sweepPhase += step * state.sweepSpeed;
@@ -126,6 +129,7 @@ const VoidLancerGraveyard = (() => {
       state.contact = true;
       state.contactSeconds = 0;
       state.graceExpired = false;
+      if (state.alarm && state.alarmBroken && !state.reinforcementsCalled) state.repeatContact = true;
       state.holding = true;
       state.holdAngle = Math.atan2(target.y - state.originY, target.x - state.originX);
       state.angle = state.holdAngle; // lock: the cone stops sweeping.
@@ -136,6 +140,10 @@ const VoidLancerGraveyard = (() => {
       state.graceExpired = false;
       state.holding = false;
       state.angle = sweepAngle;
+      if (state.alarm && !state.reinforcementsCalled) {
+        state.alarmBroken = true;
+        state.repeatContact = false;
+      }
       events.contactEnd = true;
     }
 
@@ -147,6 +155,11 @@ const VoidLancerGraveyard = (() => {
       if (!state.alarm && state.contactSeconds >= state.alarmSeconds) {
         state.alarm = true;
         events.alarm = true;
+      } else if (state.alarm && state.alarmBroken && !state.reinforcementsCalled
+        && state.contactSeconds >= state.alarmSeconds) {
+        state.reinforcementsCalled = true;
+        state.repeatContact = true;
+        events.reinforcements = true;
       }
     }
 

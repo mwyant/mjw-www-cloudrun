@@ -107,6 +107,8 @@ function makeNode(kind, args) {
     setText(value) { node.text = value; return node; },
     setColor(value) { node.color = value; return node; },
     fillStyle() { return node; },
+    fillRect() { return node; },
+    strokeRect() { return node; },
     lineStyle(width, color, alpha) { node.lines.push({ width, color, alpha }); return node; },
     strokeCircle(x, y, radius) { node.lines.push({ circle: radius }); return node; },
     lineBetween(x1, y1, x2, y2) { node.lines.push({ segment: [x1, y1, x2, y2] }); return node; },
@@ -415,6 +417,20 @@ test('score carries into the first arcade sortie and the finale keeps it', () =>
   assert.equal(r.overlay().title, ARCADE_ENTRIES[0].title);
   assert.equal(r.scene.state.score, 1900, 'the run score carries into the arcade block');
   assert.equal(r.scene.carriedScore, 1900, 'only a replay back to slot 1 zeroes it');
+});
+
+test('the MK III loadout carries across arcade lanes but not into the Solar Altar finale', () => {
+  const r = runtime();
+  r.boot();
+  r.scene.enterSortie(ARCADE_ENTRIES[0]);
+  r.scene.state.player.weaponLevel = 3;
+
+  r.scene.enterSortie(ARCADE_ENTRIES[1]);
+  assert.equal(r.scene.state.player.weaponLevel, 3, 'later arcade armor does not revoke the earned counterweapon');
+
+  r.scene.enterSortie(CAMPAIGN[CAMPAIGN.length - 1]);
+  assert.equal(r.scene.sortieIndex, 3, 'the legacy finale route remains unchanged');
+  assert.equal(r.scene.state.player.weaponLevel, 1, 'the arcade weapon does not alter the story finale loadout');
 });
 
 // --- Timed clears -----------------------------------------------------------

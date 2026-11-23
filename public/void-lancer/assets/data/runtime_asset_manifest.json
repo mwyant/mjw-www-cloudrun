@@ -19,6 +19,14 @@
     "drone": {
       "displaySize": [52, 52],
       "collisionRadius": 14
+    },
+    "interceptor": {
+      "displaySize": [72, 50],
+      "collisionRadius": 19
+    },
+    "rotary": {
+      "displaySize": [80, 48],
+      "collisionRadius": 22
     }
   },
   "boss": {

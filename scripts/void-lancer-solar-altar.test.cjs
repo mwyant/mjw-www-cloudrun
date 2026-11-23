@@ -92,6 +92,8 @@ function makeNode(kind, args) {
     setText(value) { node.text = value; return node; },
     setColor(value) { node.color = value; return node; },
     fillStyle() { return node; },
+    fillRect() { return node; },
+    strokeRect() { return node; },
     lineStyle(width, color, alpha) { node.lines.push({ width, color, alpha }); return node; },
     strokeCircle(x, y, radius) { node.lines.push({ circle: radius }); return node; },
     lineBetween(x1, y1, x2, y2) { node.lines.push({ segment: [x1, y1, x2, y2] }); return node; },

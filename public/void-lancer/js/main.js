@@ -64,6 +64,8 @@ const DEFAULT_ASSET_MANIFEST = {
     zigzag: { displaySize: [64, 46], collisionRadius: 18 },
     turret: { displaySize: [74, 52], collisionRadius: 21 },
     drone: { displaySize: [52, 52], collisionRadius: 14 },
+    interceptor: { displaySize: [72, 50], collisionRadius: 19 },
+    rotary: { displaySize: [80, 48], collisionRadius: 22 },
   },
   boss: { displaySize: [216, 144], collisionRadius: 58 },
   pickup: { displaySize: [30, 30], collisionRadius: 13 },
@@ -378,6 +380,8 @@ class MockupLevelScene extends Phaser.Scene {
     this.load.image('enemyZigzag', 'void_lancer_pack/enemy_zigzag_idle_1.webp');
     this.load.image('enemyTurret', 'void_lancer_pack/enemy_turret_idle_1.webp');
     this.load.image('enemyDrone', 'void_lancer_pack/enemy_drone_idle_1.webp');
+    this.load.image('enemyInterceptor', 'void_lancer_pack/enemy_interceptor_armor_1.webp');
+    this.load.image('enemyRotary', 'void_lancer_pack/enemy_rotary_emplacement_1.webp');
     this.load.image('bossShip', 'void_lancer_pack/boss_siege_carrier_base_1.webp');
     this.load.image('playerBulletBasic', 'void_lancer_pack/player_bullet_basic_1.webp');
     this.load.image('playerBulletPulse', 'void_lancer_pack/player_bullet_pulse_plus_1.webp');
@@ -432,7 +436,7 @@ class MockupLevelScene extends Phaser.Scene {
         speed: 285,
         lives: 3,
         cooldown: 0,
-        weaponLevel: 1,
+        weaponLevel: this.campaignEntry().kind === 'arcade' ? (this.arcadeWeaponLevel || 1) : 1,
         invuln: 0,
         fireKick: 0,
         bank: 0,
@@ -789,6 +793,13 @@ class MockupLevelScene extends Phaser.Scene {
     const next = entry || CAMPAIGN[0];
     // Score carries across a run; replaying the run starts it over.
     this.carriedScore = next.displayIndex === 1 ? 0 : (this.state?.score || 0);
+    const current = this.campaignEntry();
+    // The new MK III pickup is earned in the arcade block. Keep that loadout
+    // across its lanes (including retries), but never leak it into the legacy
+    // authored sorties or the Solar Altar finale.
+    this.arcadeWeaponLevel = next.kind === 'arcade'
+      ? (current.kind === 'arcade' ? (this.state?.player?.weaponLevel || 1) : 1)
+      : 1;
     this.applyRoute(next);
     this.resetGame();
     this.showIntro();
@@ -1017,9 +1028,23 @@ class MockupLevelScene extends Phaser.Scene {
     const alertChevron = this.add.triangle(GAME_WIDTH / 2, 476, 0, 0, 16, 0, 8, 13, 0xffb45a)
       .setVisible(false)
       .setDepth(DEPTH.graveyardAlert);
-    this.graveyardObjects.push(alertText, alertChevron);
+    const escapeCue = this.add.graphics().setDepth(DEPTH.graveyardAlert + 1).setVisible(false);
+    escapeCue.fillStyle(0x44d9ff, 0.11).fillRect(12, 251, GAME_WIDTH - 24, 52);
+    escapeCue.lineStyle(3, 0x75e8ff, 0.92).strokeRect(12, 251, GAME_WIDTH - 24, 52);
+    const escapeLabel = this.add.text(GAME_WIDTH / 2, 277, 'ESCAPE GAP // CENTER LANE', {
+      fontFamily: 'Arial',
+      fontSize: '18px',
+      color: '#e8fbff',
+      fontStyle: 'bold',
+      letterSpacing: 2,
+    }).setOrigin(0.5).setVisible(false).setDepth(DEPTH.graveyardAlert + 2);
+    escapeLabel.setStroke('#07111f', 4);
+    this.graveyardObjects.push(alertText, alertChevron, escapeCue, escapeLabel);
 
-    this.state.graveyard = { detection, salvager, backdrop, markers, beam, alertText, alertChevron };
+    this.state.graveyard = {
+      detection, salvager, backdrop, markers, beam, alertText, alertChevron,
+      escapeCue, escapeLabel, reinforcementsCalled: false,
+    };
   }
 
   buildSalvagerBoat(salvager) {
@@ -1116,6 +1141,7 @@ class MockupLevelScene extends Phaser.Scene {
 
     const events = VoidLancerGraveyard.updateDetection(detection, dt, this.state.player);
     if (events.alarm) this.triggerGraveyardAlarm();
+    if (events.reinforcements) this.triggerGraveyardReinforcements();
 
     this.renderGraveyard(detection, yard);
   }
@@ -1137,7 +1163,11 @@ class MockupLevelScene extends Phaser.Scene {
   // Text and chevron carry the alert, so it never reads by colour alone.
   updateGraveyardAlert(detection, yard) {
     const label = detection.alarm
-      ? 'ALARM // IMPERIAL PATROL ALERTED'
+      ? detection.reinforcementsCalled
+        ? 'IMPERIAL SQUAD // BREAK THROUGH CENTER GAP'
+        : detection.repeatContact && detection.contact
+          ? 'REPEAT LOCK // SQUAD RESPONSE CHARGING'
+          : 'ALARM // IMPERIAL PATROL ALERTED'
       : detection.contact
         ? (detection.graceExpired ? 'CONTACT // STAND BY' : 'CONTACT // BREAK OFF')
         : '';
@@ -1158,6 +1188,14 @@ class MockupLevelScene extends Phaser.Scene {
     yard.alertText.setAlpha(flash);
     yard.alertChevron.setAlpha(flash);
     yard.alertChevron.setScale(detection.alarm ? 1 + Math.sin(this.state.time * 16) * 0.12 : 1);
+    const cueVisible = Boolean(yard.reinforcementsCalled);
+    yard.escapeCue.setVisible(cueVisible);
+    yard.escapeLabel.setVisible(cueVisible);
+    if (cueVisible) {
+      const pulse = 0.72 + Math.sin(this.state.time * 8) * 0.2;
+      yard.escapeCue.setAlpha(pulse);
+      yard.escapeLabel.setAlpha(pulse);
+    }
   }
 
   triggerGraveyardAlarm() {
@@ -1167,6 +1205,36 @@ class MockupLevelScene extends Phaser.Scene {
     this.playSound('graveyardSiren');
     this.state.announcements.push({ text: 'WORKLIGHT ALARM // IMPERIAL PATROL ALERTED', ttl: 2.6, kind: 'warning' });
     this.updateAnnouncementDisplay();
+  }
+
+  triggerGraveyardReinforcements() {
+    const yard = this.state.graveyard;
+    if (!yard || yard.reinforcementsCalled) return;
+    yard.reinforcementsCalled = true;
+    this.playSound('graveyardSiren');
+    this.state.announcements.unshift({
+      text: 'IMPERIAL REINFORCEMENTS // BREAK THROUGH CENTER GAP',
+      ttl: 3.2,
+      kind: 'warning',
+    });
+    this.updateAnnouncementDisplay();
+
+    // Eight rows close from above and below, leaving one continuous, marked
+    // 146px center-to-center passage (about 60px of clear player travel). The
+    // 40 craft are elite 3-hit variants; the base
+    // interceptor elsewhere remains a 2-hit enemy.
+    const upperRows = [66, 112, 158, 204];
+    const lowerRows = [350, 396, 442, 488];
+    for (const y of [...upperRows, ...lowerRows]) {
+      for (let column = 0; column < 5; column += 1) {
+        this.spawnEnemy('interceptor', GAME_WIDTH + 300 + column * 84, y, {
+          speed: 170,
+          hp: 24,
+          radius: 20,
+          score: 240,
+        });
+      }
+    }
   }
 
   // --- Solar Altar scenery (sortie 3) -------------------------------------
@@ -1328,7 +1396,7 @@ class MockupLevelScene extends Phaser.Scene {
         }
         break;
       case 'spawnPickup':
-        this.spawnPowerUp(action.x, action.y);
+        this.spawnPowerUp(action.x, action.y, action.weaponLevel || 2);
         break;
       case 'queueBossArrival':
         this.state.bossQueued = true;
@@ -1361,22 +1429,38 @@ class MockupLevelScene extends Phaser.Scene {
       zigzag: 'enemyZigzag',
       turret: 'enemyTurret',
       drone: 'enemyDrone',
+      interceptor: 'enemyInterceptor',
+      rotary: 'enemyRotary',
     }[type] || 'enemyScout';
-    const baseHp = options.hp ?? (type === 'turret' ? 3 : type === 'drone' ? 2 : 1);
+    const baseHp = options.hp ?? (
+      type === 'interceptor' ? 16
+        : type === 'rotary' ? 24
+          : type === 'turret' ? 3
+            : type === 'drone' ? 2
+              : 1
+    );
     const enemy = {
       type,
       x,
       y,
-      speed: options.speed ?? (type === 'turret' ? 92 : type === 'drone' ? 230 : 170),
+      speed: options.speed ?? (type === 'turret' ? 92 : type === 'rotary' ? 42 : type === 'drone' ? 230 : 170),
       phase: options.phase ?? Phaser.Math.FloatBetween(0, Math.PI * 2),
-      fireCooldown: options.fireCooldown ?? (type === 'turret' ? Phaser.Math.FloatBetween(0.5, 1.2) : 0),
+      fireCooldown: options.fireCooldown ?? (type === 'turret' || type === 'rotary' ? Phaser.Math.FloatBetween(0.5, 1.2) : 0),
+      rotationSpeed: options.rotationSpeed ?? 1.6,
       // A tagged patrol stays on station and silent until the worklight alarm.
       patrolTag: options.patrolTag || null,
       life: 0,
       radius: options.radius ?? manifest.collisionRadius,
       hp: baseHp,
       maxHp: baseHp,
-      score: options.score ?? (type === 'turret' ? 220 : type === 'drone' ? 180 : type === 'zigzag' ? 150 : 100),
+      score: options.score ?? (
+        type === 'rotary' ? 300
+          : type === 'interceptor' ? 200
+            : type === 'turret' ? 220
+              : type === 'drone' ? 180
+                : type === 'zigzag' ? 150
+                  : 100
+      ),
       sprite: this.add.image(x, y, textureKey)
         .setDisplaySize(manifest.displaySize[0], manifest.displaySize[1])
         .setDepth(DEPTH.entities),
@@ -1391,11 +1475,15 @@ class MockupLevelScene extends Phaser.Scene {
     let children;
 
     if (isPlayer) {
+      const isHeavy = variant === 'heavy';
       const isPulse = variant === 'pulse';
-      const glow = this.add.ellipse(0, 0, isPulse ? 34 : 26, isPulse ? 16 : 12, body, 0.28);
-      const streak = this.add.rectangle(0, 0, isPulse ? 24 : 20, isPulse ? 7 : 6, body)
-        .setStrokeStyle(2, outline);
-      const core = this.add.rectangle(2, 0, isPulse ? 16 : 12, 2, highlight);
+      const projectileBody = isHeavy ? COLORS.orange : body;
+      const projectileHighlight = isHeavy ? 0xfff0cb : highlight;
+      const projectileOutline = isHeavy ? 0x66300b : outline;
+      const glow = this.add.ellipse(0, 0, isHeavy ? 42 : isPulse ? 34 : 26, isHeavy ? 18 : isPulse ? 16 : 12, projectileBody, 0.3);
+      const streak = this.add.rectangle(0, 0, isHeavy ? 34 : isPulse ? 24 : 20, isHeavy ? 10 : isPulse ? 7 : 6, projectileBody)
+        .setStrokeStyle(2, projectileOutline);
+      const core = this.add.rectangle(4, 0, isHeavy ? 24 : isPulse ? 16 : 12, isHeavy ? 4 : 2, projectileHighlight);
       children = [glow, streak, core];
     } else {
       const isBurst = variant === 'burst';
@@ -1422,16 +1510,17 @@ class MockupLevelScene extends Phaser.Scene {
     return bullet;
   }
 
-  spawnPowerUp(x, y) {
+  spawnPowerUp(x, y, weaponLevel = 2) {
     const manifest = this.assetManifest?.pickup || DEFAULT_ASSET_MANIFEST.pickup;
     const powerUp = {
       x,
       y,
+      weaponLevel,
       radius: manifest.collisionRadius,
       dead: false,
       sprite: this.add.image(x, y, 'pickupPulse')
         .setDisplaySize(manifest.displaySize[0], manifest.displaySize[1])
-        .setTint(COLORS.cyan)
+        .setTint(weaponLevel >= 3 ? COLORS.orange : COLORS.cyan)
         .setDepth(DEPTH.entities + 1),
     };
     this.state.powerUps.push(powerUp);
@@ -1874,8 +1963,9 @@ class MockupLevelScene extends Phaser.Scene {
 
     this.scoreText.setText(score.toString().padStart(6, '0'));
     this.livesText.setText(this.state.player.lives.toString().padStart(2, '0'));
-    this.weaponText.setText(this.state.player.weaponLevel > 1 ? 'PULSE+' : 'PULSE');
-    this.weaponTag.setText(this.state.player.weaponLevel > 1 ? 'MK II' : 'MK I');
+    const weaponLevel = this.state.player.weaponLevel;
+    this.weaponText.setText(weaponLevel >= 3 ? 'LANCE' : weaponLevel === 2 ? 'PULSE+' : 'PULSE');
+    this.weaponTag.setText(weaponLevel >= 3 ? 'MK III' : weaponLevel === 2 ? 'MK II' : 'MK I');
     // The counter reads display order, never the routing identity: the finale
     // shows 12 / 12 while ?sortie=3 still routes to it for practice.
     const entry = this.campaignEntry();
@@ -1991,11 +2081,12 @@ class MockupLevelScene extends Phaser.Scene {
   }
 
   showWeaponUpgradePulse(level) {
-    const upgradeText = level > 1 ? 'PULSE+' : 'PULSE';
-    this.weaponTag.setText(level > 1 ? 'MK II' : 'MK I');
-    this.weaponGlow.setFillStyle(level > 1 ? COLORS.gold : COLORS.cyan, 0.14);
+    const color = level >= 3 ? COLORS.orange : level === 2 ? COLORS.gold : COLORS.cyan;
+    const upgradeText = level >= 3 ? 'LANCE' : level === 2 ? 'PULSE+' : 'PULSE';
+    this.weaponTag.setText(level >= 3 ? 'MK III' : level === 2 ? 'MK II' : 'MK I');
+    this.weaponGlow.setFillStyle(color, 0.14);
     this.weaponGlow.setAlpha(0.0);
-    this.pulseText(this.weaponText, level > 1 ? COLORS.gold : COLORS.cyan, 1.16, 220);
+    this.pulseText(this.weaponText, color, 1.16, 220);
     this.tweens.killTweensOf(this.weaponGlow);
     this.tweens.add({
       targets: this.weaponGlow,
@@ -2186,9 +2277,14 @@ class MockupLevelScene extends Phaser.Scene {
 
     const firing = this.actionState.isHeld('fire');
     if (firing && p.cooldown <= 0) {
-      p.cooldown = p.weaponLevel > 1 ? 0.14 : 0.18;
-      this.spawnBullet('player', p.x + 24, p.y, 560, 0, 4, 8);
-      if (p.weaponLevel > 1) {
+      if (p.weaponLevel >= 3) {
+        p.cooldown = 0.34;
+        this.spawnBullet('player', p.x + 28, p.y, 460, 0, 5, 16, 'heavy');
+      } else {
+        p.cooldown = p.weaponLevel === 2 ? 0.14 : 0.18;
+        this.spawnBullet('player', p.x + 24, p.y, 560, 0, 4, 8);
+      }
+      if (p.weaponLevel === 2) {
         this.spawnBullet('player', p.x + 16, p.y - 10, 520, -90, 3, 6, 'pulse');
         this.spawnBullet('player', p.x + 16, p.y + 10, 520, 90, 3, 6, 'pulse');
       }
@@ -2230,6 +2326,29 @@ class MockupLevelScene extends Phaser.Scene {
       } else if (enemy.type === 'zigzag') {
         enemy.x -= enemy.speed * dt;
         enemy.y += Math.sin(enemy.life * 4 + enemy.phase) * 90 * dt;
+      } else if (enemy.type === 'interceptor') {
+        enemy.x -= enemy.speed * dt;
+        enemy.y += Math.sin(enemy.life * 3.2 + enemy.phase) * 44 * dt;
+      } else if (enemy.type === 'rotary') {
+        enemy.x -= enemy.speed * dt;
+        const barrelRotation = enemy.life * enemy.rotationSpeed;
+        const shotAngle = Math.PI + barrelRotation; // art's idle barrel points left.
+        enemy.sprite.rotation = barrelRotation;
+        enemy.fireCooldown -= dt;
+        if (enemy.fireCooldown <= 0) {
+          enemy.fireCooldown = 0.78;
+          this.spawnBullet(
+            'enemy',
+            enemy.x,
+            enemy.y,
+            Math.cos(shotAngle) * 250,
+            Math.sin(shotAngle) * 250,
+            5,
+            1,
+            'burst',
+          );
+          this.playSound('enemyFire', { volume: 0.14, detune: -30 });
+        }
       } else if (enemy.type === 'turret') {
         enemy.x -= enemy.speed * dt;
         enemy.y += Math.sin(enemy.life * 2.4 + enemy.phase) * 40 * dt;
@@ -2366,18 +2485,19 @@ class MockupLevelScene extends Phaser.Scene {
             this.spawnHitSpark(bullet.x, bullet.y, { baseScale: 0.5, peakScale: 1.1, burstDistance: 22 });
             if (enemy.hp <= 0) {
               this.state.score += enemy.score;
-              this.playSound(enemy.type === 'turret' || enemy.type === 'drone' ? 'explosionMedium' : 'explosionSmall');
+              const heavyEnemy = enemy.type === 'turret' || enemy.type === 'drone' || enemy.type === 'rotary';
+              this.playSound(heavyEnemy ? 'explosionMedium' : 'explosionSmall');
               this.spawnExplosionFx(
                 enemy.x,
                 enemy.y,
-                enemy.type === 'turret' || enemy.type === 'drone' ? 'medium' : 'small',
-                enemy.type === 'turret' || enemy.type === 'drone'
+                heavyEnemy ? 'medium' : 'small',
+                heavyEnemy
                   ? { baseScale: 0.85, peakScale: 1.45, burstDistance: 52 }
                   : { baseScale: 0.72, peakScale: 1.1, burstDistance: 34 }
               );
               this.syncHud();
               if (enemy.type === 'turret' && this.state.player.weaponLevel === 1 && Math.random() > 0.4) {
-                this.spawnPowerUp(enemy.x, enemy.y);
+                this.spawnPowerUp(enemy.x, enemy.y, 2);
               }
             }
             break;
@@ -2422,9 +2542,10 @@ class MockupLevelScene extends Phaser.Scene {
     for (const power of this.state.powerUps) {
       if (this.rectCircleHit(pRect, power.x, power.y, power.radius)) {
         power.dead = true;
-        this.state.player.weaponLevel = 2;
+        this.state.player.weaponLevel = Math.max(this.state.player.weaponLevel, power.weaponLevel || 2);
         this.state.score += 250;
-        this.state.announcements.push({ text: 'Pulse upgrade online', ttl: 1.8, kind: 'upgrade' });
+        const weaponName = this.state.player.weaponLevel >= 3 ? 'MK III heavy shot online' : 'Pulse upgrade online';
+        this.state.announcements.push({ text: weaponName, ttl: 1.8, kind: 'upgrade' });
         this.updateAnnouncementDisplay();
         this.spawnExplosionFx(power.x, power.y, 'small', { palette: [0x90ffc9, 0x7ff0b8, 0xeafff4], baseScale: 0.5, peakScale: 0.85, burstDistance: 24, shards: 4, smokeCount: 0 });
         this.playSound('pickup', { volume: 0.18 });

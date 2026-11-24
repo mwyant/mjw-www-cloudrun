@@ -371,6 +371,19 @@ window.VoidLancerArcadeStageData = {
           ],
         },
         {
+          // Bring the three-hit emplacement into the crossing while the player
+          // still has a full approach window to see its sweeping fire.
+          time: 18.5,
+          actions: [
+            {
+              type: 'spawnEnemies',
+              enemies: [
+                { type: 'rotary', x: 1400, y: 290, options: { speed: 80, fireCooldown: 2.1, rotationSpeed: 1.45 } },
+              ],
+            },
+          ],
+        },
+        {
           time: 21,
           actions: [
             {
@@ -430,7 +443,6 @@ window.VoidLancerArcadeStageData = {
                   y: 265,
                   options: { phase: 1.5, speed: 160 },
                 },
-                { type: 'rotary', x: 1400, y: 290, options: { speed: 80, fireCooldown: 2.1, rotationSpeed: 1.45 } },
               ],
             },
           ],

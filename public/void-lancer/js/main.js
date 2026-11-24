@@ -21,6 +21,9 @@ const DEPTH = {
   boss: 90,
 };
 
+// Only authored shooter hulls use this cadence; the rest remain movement-only.
+const TARGETED_FIGHTER_FIRE_INTERVAL = 2.6;
+
 const COLORS = {
   gold: 0xffd65a,
   orange: 0xffa25a,
@@ -1445,12 +1448,21 @@ class MockupLevelScene extends Phaser.Scene {
       y,
       speed: options.speed ?? (type === 'turret' ? 92 : type === 'rotary' ? 42 : type === 'drone' ? 230 : 170),
       phase: options.phase ?? Phaser.Math.FloatBetween(0, Math.PI * 2),
-      fireCooldown: options.fireCooldown ?? (type === 'turret' || type === 'rotary' ? Phaser.Math.FloatBetween(0.5, 1.2) : 0),
+      fireCooldown: options.fireCooldown ?? (
+        type === 'interceptor' ? Phaser.Math.FloatBetween(0.8, 1.4)
+          : type === 'turret' || type === 'rotary' ? Phaser.Math.FloatBetween(0.5, 1.2)
+            : 0
+      ),
       rotationSpeed: options.rotationSpeed ?? 1.6,
       // A tagged patrol stays on station and silent until the worklight alarm.
       patrolTag: options.patrolTag || null,
       life: 0,
       radius: options.radius ?? manifest.collisionRadius,
+      // Interceptors are armed by definition; other light fighters opt in via
+      // their stage-data fireCooldown so each wave can control its pressure.
+      firesAtPlayer: type === 'interceptor' || (
+        ['scout', 'zigzag', 'drone'].includes(type) && options.fireCooldown !== undefined
+      ),
       hp: baseHp,
       maxHp: baseHp,
       score: options.score ?? (
@@ -2370,6 +2382,27 @@ class MockupLevelScene extends Phaser.Scene {
       } else if (enemy.type === 'drone') {
         enemy.x -= enemy.speed * dt;
         enemy.y += Math.cos(enemy.life * 5 + enemy.phase) * 130 * dt;
+      }
+      if (enemy.firesAtPlayer) {
+        enemy.fireCooldown -= dt;
+        if (enemy.fireCooldown <= 0) {
+          enemy.fireCooldown = TARGETED_FIGHTER_FIRE_INTERVAL;
+          const shotX = enemy.x - enemy.radius;
+          const dx = this.state.player.x - shotX;
+          const dy = this.state.player.y - enemy.y;
+          const distance = Math.hypot(dx, dy) || 1;
+          const shotSpeed = 280;
+          this.spawnBullet(
+            'enemy',
+            shotX,
+            enemy.y,
+            (dx / distance) * shotSpeed,
+            (dy / distance) * shotSpeed,
+            5,
+            1,
+          );
+          this.playSound('enemyFire', { volume: 0.13, detune: -20 });
+        }
       }
     }
 

@@ -6,7 +6,7 @@ window.VoidLancerLevel1StageData = {
         {
           type: 'spawnEnemies',
           enemies: [
-            { type: 'scout', x: 960, y: 100 },
+            { type: 'scout', x: 960, y: 100, options: { fireCooldown: 0.55 } },
             { type: 'scout', x: 1030, y: 170 },
             { type: 'scout', x: 1100, y: 240 },
             { type: 'scout', x: 1170, y: 310 },
@@ -21,7 +21,7 @@ window.VoidLancerLevel1StageData = {
         {
           type: 'spawnEnemies',
           enemies: [
-            { type: 'zigzag', x: 960, y: 90, options: { phase: 0 } },
+            { type: 'zigzag', x: 960, y: 90, options: { phase: 0, fireCooldown: 0.8 } },
             { type: 'zigzag', x: 1040, y: 350, options: { phase: 0.6 } },
             { type: 'zigzag', x: 1120, y: 90, options: { phase: 1.2 } },
             { type: 'zigzag', x: 1200, y: 350, options: { phase: 1.8 } },
@@ -51,7 +51,7 @@ window.VoidLancerLevel1StageData = {
         {
           type: 'spawnEnemies',
           enemies: [
-            { type: 'drone', x: 960, y: { mode: 'safeEnemyY' }, options: { speed: 240 } },
+            { type: 'drone', x: 960, y: { mode: 'safeEnemyY' }, options: { speed: 240, fireCooldown: 0.8 } },
             { type: 'drone', x: 1015, y: { mode: 'safeEnemyY' }, options: { speed: 246 } },
             { type: 'drone', x: 1070, y: { mode: 'safeEnemyY' }, options: { speed: 252 } },
             { type: 'drone', x: 1125, y: { mode: 'safeEnemyY' }, options: { speed: 258 } },
@@ -102,7 +102,7 @@ window.VoidLancerLevel1StageData = {
         {
           type: 'spawnEnemies',
           enemies: [
-            { type: 'drone', x: 960, y: 80, options: { speed: 220 } },
+            { type: 'drone', x: 960, y: 80, options: { speed: 220, fireCooldown: 0.9 } },
             { type: 'drone', x: 1025, y: 175, options: { speed: 220 } },
             { type: 'drone', x: 1090, y: 270, options: { speed: 220 } },
             { type: 'drone', x: 1155, y: 365, options: { speed: 220 } },

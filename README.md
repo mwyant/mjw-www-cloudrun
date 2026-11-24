@@ -84,6 +84,33 @@ upstream implementation's logical-key and chord matching.
 
 Run the VM tests with `node --test scripts/void-lancer-*.test.cjs`.
 
+### Local browser playtest
+
+For a real canvas playtest that does not depend on an automation browser's
+keyboard focus, use Node.js 22+ and an installed Chrome/Chromium:
+
+```bash
+node scripts/void-lancer-local-playtest.cjs
+```
+
+The test-only runner serves `public/` locally, opens a fresh headless browser at
+`/void-lancer/?sortie=2`, starts the Graveyard briefing, then sends browser
+keyboard events to move and fire alongside the first patrol. It checks the
+live scene for player movement, spawned enemies, and a player projectile, and
+saves a canvas screenshot to `/tmp/opencode/void-lancer-sortie-2.png`. Set
+`CHROME_BIN` to choose a non-standard Chrome/Chromium executable or
+`VOID_LANCER_SCREENSHOT` to change the screenshot path. The browser is muted
+and uses a temporary profile; no gameplay or balance files are changed.
+Add `--enemy-fire` to keep the scene running until an enemy projectile appears
+(up to 30 seconds), which is useful when checking live firing behavior:
+
+```bash
+node scripts/void-lancer-local-playtest.cjs --enemy-fire
+```
+
+That longer check uses Phaser's Canvas renderer to keep headless software
+rendering lighter; the default smoke test leaves the normal auto renderer on.
+
 ### Phone landscape playtest
 
 In landscape with a coarse pointer and a viewport at most 600 CSS pixels tall,
